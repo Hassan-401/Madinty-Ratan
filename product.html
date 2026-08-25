@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>تفاصيل المنتج — Madinty Ratan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+
+<div class="wrap">
+  <div class="crumbs" id="crumbs"></div>
+  <div id="detail"></div>
+</div>
+
+<section style="padding-top:10px" id="relatedSec">
+  <div class="wrap">
+    <div class="sec-head"><h2>منتجات مشابهة</h2></div>
+    <div class="grid" id="related"></div>
+  </div>
+</section>
+
+<script src="assets/js/data.js"></script>
+<script src="assets/js/app.js"></script>
+<script>
+  renderHeader("products");
+
+  const id = new URLSearchParams(location.search).get("id");
+  const p  = getProduct(id);
+  let qty  = 1;
+
+  if (!p) {
+    document.getElementById("detail").innerHTML = `
+      <div class="empty">
+        <div class="ic">😕</div>
+        <p>المنتج غير موجود.</p>
+        <a class="btn btn-dark" href="products.html">العودة للمنتجات</a>
+      </div>`;
+    document.getElementById("relatedSec").style.display = "none";
+  } else {
+    document.title = p.name + " — Madinty Ratan";
+    document.getElementById("crumbs").innerHTML =
+      `<a href="index.html">الرئيسية</a> / <a href="products.html?cat=${p.cat}">${catName(p.cat)}</a> / ${esc(p.name)}`;
+
+    const off = p.oldPrice ? Math.round((1 - p.price / p.oldPrice) * 100) : 0;
+
+    document.getElementById("detail").innerHTML = `
+    <div class="p-detail">
+      <div class="photo"><img src="${p.img}" alt="${esc(p.name)}"></div>
+      <div>
+        <span class="cat-tag" style="color:var(--gold);font-weight:600;font-size:13px">${catName(p.cat)}</span>
+        <h1>${esc(p.name)}</h1>
+        <p class="short">${esc(p.short)}</p>
+        <div class="price">${money(p.price)}
+          ${p.oldPrice ? `<span class="old">${money(p.oldPrice)}</span>` : ""}
+          ${off ? `<span class="badge" style="position:static;display:inline-block;margin-inline-start:8px">وفر ${off}%</span>` : ""}
+        </div>
+
+        <ul class="meta">
+          ${p.specs.map(s => `<li>${esc(s)}</li>`).join("")}
+          <li>ضمان ${esc(p.warranty)}</li>
+        </ul>
+
+        <div class="buy">
+          <div class="qty">
+            <button type="button" onclick="changeQty(-1)">−</button>
+            <span id="q">1</span>
+            <button type="button" onclick="changeQty(1)">+</button>
+          </div>
+          <button class="btn btn-dark" onclick="addToCart('${p.id}', qty)">🛒 أضف للعربة</button>
+          <button class="btn btn-gold" onclick="addToCart('${p.id}', qty); location.href='cart.html'">اطلب الآن</button>
+        </div>
+
+        <div class="infobox">
+          <div>🚚 ${STORE.freeShipping}</div>
+          <div>📦 ${STORE.shippingNote}</div>
+          <div>🏭 المصنع: ${STORE.factory}</div>
+          <div>💬 للاستفسار واتساب: <a href="https://wa.me/${STORE.whatsapp}" target="_blank" rel="noopener" dir="ltr">${STORE.whatsappDisplay}</a></div>
+        </div>
+      </div>
+    </div>`;
+
+    const rel = PRODUCTS.filter(x => x.cat === p.cat && x.id !== p.id).slice(0, 4);
+    if (rel.length) document.getElementById("related").innerHTML = rel.map(productCard).join("");
+    else document.getElementById("relatedSec").style.display = "none";
+  }
+
+  function changeQty(d) {
+    qty = Math.max(1, qty + d);
+    document.getElementById("q").textContent = qty;
+  }
+
+  renderFooter();
+</script>
+</body>
+</html>

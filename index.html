@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Madinty Ratan — أثاث خارجي فاخر</title>
+    <meta
+      name="description"
+      content="متجر Madinty Ratan لأثاث الحدائق والتراسات والكافيهات — أطقم رتان، حديد علب، دبار، مراجيح وبرجولات."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="assets/css/style.css" />
+  </head>
+  <body class="has-hero">
+    <!-- HERO -->
+    <section class="hero">
+      <div class="wrap hero-inner">
+        <div class="hero-content">
+          <h1>أثاث خارجي<br />يليق ببيتك وڤيلتك</h1>
+          <p class="sub">
+            تصاميم أنيقة بخامات تدوم لسنوات — رتان وحديد علب ودبار
+          </p>
+          <a class="btn btn-gold btn-lg" href="products.html"
+            >تسوق الآن <span class="chev">‹</span></a
+          >
+        </div>
+
+        <ul class="hero-feats" id="heroFeats"></ul>
+      </div>
+    </section>
+
+    <!-- الأقسام -->
+    <section id="cats">
+      <div class="wrap">
+        <div class="sec-head">
+          <h2>الأقسام</h2>
+          <p>اختر القسم اللي يناسب مساحتك</p>
+        </div>
+        <div class="cats" id="catsGrid"></div>
+      </div>
+    </section>
+
+    <!-- الأكثر طلبًا -->
+    <section style="padding-top: 0">
+      <div class="wrap">
+        <div class="sec-head">
+          <h2>الأكثر طلبًا</h2>
+          <p>مختارات من أفضل منتجاتنا</p>
+        </div>
+        <div class="grid" id="featured"></div>
+        <div style="text-align: center; margin-top: 26px">
+          <a class="btn btn-line" href="products.html">عرض جميع المنتجات ←</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- نبذة عنّا -->
+    <section class="about-teaser">
+      <div class="wrap">
+        <div class="at-grid">
+          <div class="at-img">
+            <img
+              src="assets/img/home.jpg"
+              alt="Madinty Ratan — أثاث خارجي بخامة تدوم"
+              loading="lazy"
+            />
+          </div>
+          <div class="at-txt">
+            <span class="kicker">من نحن</span>
+            <h2>من المصنع لباب بيتك — بدون وسطاء</h2>
+            <p>
+              بنصنّع أثاث خارجي في مصنعنا بأشمون — المنوفية، بخامات معالجة ضد
+              الماء والشمس ودهان فرن إلكتروستاتك. كل قطعة بتتنفّذ بإيد صنايعية
+              متخصصين، وبنسلّمها لحد باب البيت بضمان فعلي يوصل لـ 10 سنوات.
+            </p>
+            <ul class="at-stats">
+              <li><b>+7</b><span>سنوات خبرة</span></li>
+              <li><b>+2000</b><span>عميل</span></li>
+              <li><b>10</b><span>سنوات ضمان</span></li>
+            </ul>
+            <a class="btn btn-line" href="about.html">اعرف أكتر عننا ←</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <script src="assets/js/data.js"></script>
+    <script src="assets/js/app.js"></script>
+    <script>
+      renderHeader("home", true);
+
+      document.getElementById("heroFeats").innerHTML = [
+        [ICONS.truck, "توصيل سريع", "لكافة المحافظات"],
+        [ICONS.medal, "جودة مضمونة", "أفضل الخامات"],
+        [ICONS.shield, "ضمان ممتد", "حتى 10 سنوات"],
+      ]
+        .map(
+          ([ic, t, s]) =>
+            `<li><div class="ic">${ic}</div><b>${t}</b><span>${s}</span></li>`,
+        )
+        .join("");
+
+      document.getElementById("catsGrid").innerHTML = CATEGORIES.map(
+        (c) => `
+    <a class="cat" href="products.html?cat=${c.id}">
+      <div class="ic">${c.icon}</div>
+      <h3>${c.name}</h3>
+      <p>${c.desc}</p>
+    </a>`,
+      ).join("");
+
+      document.getElementById("featured").innerHTML = PRODUCTS.filter(
+        (p) => p.featured,
+      )
+        .map(productCard)
+        .join("");
+
+      renderFooter();
+    </script>
+  </body>
+</html>

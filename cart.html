@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>عربة التسوق وإتمام الطلب — Madinty Ratan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+
+<div class="wrap">
+  <div class="crumbs"><a href="index.html">الرئيسية</a> / عربة التسوق</div>
+
+  <!-- حالة العربة الفارغة -->
+  <div class="empty" id="emptyState" style="display:none">
+    <div class="ic">🛒</div>
+    <p>عربة التسوق فارغة.</p>
+    <a class="btn btn-dark" href="products.html">ابدأ التسوق</a>
+  </div>
+
+  <!-- حالة تأكيد الطلب -->
+  <div class="empty" id="doneState" style="display:none">
+    <div class="ic">✅</div>
+    <h2 style="margin:0 0 8px;color:var(--ink)">تم إرسال طلبك على الواتساب</h2>
+    <p>لو لم تُفتح نافذة الواتساب تلقائيًا، اضغط الزر التالي لإرسال الطلب.</p>
+    <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:14px">
+      <a class="btn btn-wa" id="resendLink" href="#" target="_blank" rel="noopener">💬 إرسال الطلب مرة أخرى</a>
+      <a class="btn btn-line" href="products.html">متابعة التسوق</a>
+    </div>
+  </div>
+
+  <!-- العربة + بيانات العميل -->
+  <div class="cart-layout" id="cartLayout">
+    <div>
+      <div class="panel">
+        <h2>🛒 منتجات العربة</h2>
+        <div id="lines"></div>
+      </div>
+
+      <div class="panel" style="margin-top:18px">
+        <h2>👤 بيانات التوصيل</h2>
+        <form id="orderForm" novalidate>
+          <div class="field">
+            <label for="name">الاسم بالكامل <span class="req">*</span></label>
+            <input id="name" name="name" type="text" placeholder="مثال: أحمد محمد" autocomplete="name">
+            <div class="err">من فضلك اكتب اسمك (حرفان على الأقل).</div>
+          </div>
+
+          <div class="row2">
+            <div class="field">
+              <label for="phone">رقم الموبايل <span class="req">*</span></label>
+              <input id="phone" name="phone" type="tel" inputmode="numeric" placeholder="01xxxxxxxxx" dir="ltr" autocomplete="tel">
+              <div class="err">رقم موبايل مصري غير صحيح (11 رقم يبدأ بـ 010/011/012/015).</div>
+            </div>
+            <div class="field">
+              <label for="phone2">رقم احتياطي (اختياري)</label>
+              <input id="phone2" name="phone2" type="tel" inputmode="numeric" placeholder="01xxxxxxxxx" dir="ltr">
+              <div class="err">رقم موبايل مصري غير صحيح.</div>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="gov">المحافظة <span class="req">*</span></label>
+            <select id="gov" name="gov"><option value="">اختر المحافظة</option></select>
+            <div class="err">من فضلك اختر المحافظة.</div>
+          </div>
+
+          <div class="field">
+            <label for="address">العنوان بالتفصيل <span class="req">*</span></label>
+            <input id="address" name="address" type="text" placeholder="المدينة / الشارع / رقم العقار والدور">
+            <div class="err">من فضلك اكتب العنوان بالتفصيل (10 أحرف على الأقل).</div>
+          </div>
+
+          <div class="field">
+            <label for="notes">ملاحظات على الطلب (اختياري)</label>
+            <textarea id="notes" name="notes" placeholder="مثال: لون الشلت المفضل، ميعاد التوصيل المناسب..."></textarea>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- ملخص الطلب -->
+    <div class="panel" style="position:sticky;top:86px">
+      <h2>🧾 ملخص الطلب</h2>
+      <div class="sum"><span>عدد القطع</span><strong id="sCount">0</strong></div>
+      <div class="sum"><span>الإجمالي الفرعي</span><strong id="sSub">0</strong></div>
+      <div class="sum"><span>الشحن</span><strong style="color:var(--forest)">يُحدد عند التأكيد</strong></div>
+      <div class="sum total"><span>الإجمالي</span><span id="sTotal">0</span></div>
+
+      <button class="btn btn-wa btn-block" style="margin-top:16px" id="submitBtn">
+        ✅ تأكيد الطلب وإرساله على الواتساب
+      </button>
+      <p style="font-size:12.5px;color:var(--ink-3);margin:10px 0 0;text-align:center">
+        هيتم تحويلك للواتساب برسالة فيها تفاصيل طلبك — راجعها واضغط إرسال.
+      </p>
+      <div class="infobox" style="margin-top:14px">
+        <div id="shipNote">🚚 التوصيل مجانًا داخل القاهرة والجيزة</div>
+        <div>💵 الدفع عند الاستلام</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="assets/js/data.js"></script>
+<script src="assets/js/app.js"></script>
+<script>
+  renderHeader("cart");
+
+  const layout = document.getElementById("cartLayout");
+  const empty  = document.getElementById("emptyState");
+  const done   = document.getElementById("doneState");
+
+  /* المحافظات */
+  const govSel = document.getElementById("gov");
+  govSel.innerHTML += GOVS.map(g => `<option value="${g}">${g}</option>`).join("");
+
+  /* نص الشحن في صندوق المعلومات */
+  document.getElementById("shipNote").textContent = "🚚 " + STORE.freeShipping;
+
+  /* رسم العربة */
+  function renderCart() {
+    const cart = getCart();
+    if (!cart.length) {
+      layout.style.display = "none";
+      empty.style.display  = "block";
+      return;
+    }
+    layout.style.display = "";
+    empty.style.display  = "none";
+
+    document.getElementById("lines").innerHTML = cart.map(l => {
+      const p = getProduct(l.id);
+      if (!p) return "";
+      return `
+      <div class="line">
+        <img src="${p.img}" alt="${esc(p.name)}">
+        <div class="info">
+          <h4><a href="product.html?id=${p.id}">${esc(p.name)}</a></h4>
+          <div class="u">${money(p.price)} × ${l.qty}</div>
+          <div class="price" style="font-size:15.5px">${money(p.price * l.qty)}</div>
+        </div>
+        <div class="ctrl">
+          <div class="qty">
+            <button type="button" onclick="step('${p.id}',-1)">−</button>
+            <span>${l.qty}</span>
+            <button type="button" onclick="step('${p.id}',1)">+</button>
+          </div>
+          <button class="rm" onclick="drop('${p.id}')">حذف</button>
+        </div>
+      </div>`;
+    }).join("");
+
+    document.getElementById("sCount").textContent = cartCount() + " قطعة";
+    document.getElementById("sSub").textContent   = money(cartTotal());
+    document.getElementById("sTotal").textContent = money(cartTotal());
+  }
+
+  function step(id, d) {
+    const line = getCart().find(l => l.id === id);
+    if (!line) return;
+    if (line.qty + d < 1) { drop(id); return; }
+    setQty(id, line.qty + d);
+    renderCart();
+  }
+  function drop(id) { removeFromCart(id); renderCart(); toast("تم حذف المنتج"); }
+
+  /* التحقق من البيانات */
+  const isPhone = v => /^01[0125][0-9]{8}$/.test(v.replace(/\s|-/g, ""));
+
+  function mark(el, ok) {
+    el.closest(".field").classList.toggle("invalid", !ok);
+    return ok;
+  }
+
+  function validate() {
+    const name    = document.getElementById("name");
+    const phone   = document.getElementById("phone");
+    const phone2  = document.getElementById("phone2");
+    const gov     = document.getElementById("gov");
+    const address = document.getElementById("address");
+
+    let ok = true;
+    ok = mark(name,    name.value.trim().length >= 2) && ok;
+    ok = mark(phone,   isPhone(phone.value.trim())) && ok;
+    ok = mark(phone2,  !phone2.value.trim() || isPhone(phone2.value.trim())) && ok;
+    ok = mark(gov,     gov.value !== "") && ok;
+    ok = mark(address, address.value.trim().length >= 10) && ok;
+    return ok;
+  }
+
+  /* تأكيد الطلب */
+  document.getElementById("submitBtn").addEventListener("click", () => {
+    if (!getCart().length) { toast("العربة فارغة"); return; }
+
+    if (!validate()) {
+      toast("راجع البيانات المطلوبة");
+      document.querySelector(".field.invalid input, .field.invalid select")?.focus();
+      return;
+    }
+
+    const customer = {
+      name:    document.getElementById("name").value.trim(),
+      phone:   document.getElementById("phone").value.trim(),
+      phone2:  document.getElementById("phone2").value.trim(),
+      gov:     document.getElementById("gov").value,
+      address: document.getElementById("address").value.trim(),
+      notes:   document.getElementById("notes").value.trim()
+    };
+
+    const url = `https://wa.me/${STORE.whatsapp}?text=${encodeURIComponent(buildOrderMessage(customer))}`;
+    window.open(url, "_blank");
+
+    document.getElementById("resendLink").href = url;
+    clearCart();
+    layout.style.display = "none";
+    empty.style.display  = "none";
+    done.style.display   = "block";
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  });
+
+  renderCart();
+  renderFooter();
+</script>
+</body>
+</html>

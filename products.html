@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>جميع المنتجات — Madinty Ratan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+
+<section style="padding:34px 0 60px">
+  <div class="wrap">
+    <div class="sec-head">
+      <h2 id="title">جميع المنتجات</h2>
+      <p id="count"></p>
+    </div>
+
+    <div class="filters" id="filters"></div>
+    <div class="grid" id="grid"></div>
+    <div class="empty" id="none" style="display:none">
+      <div class="ic">🔍</div>
+      <p>لا توجد منتجات في هذا القسم حاليًا.</p>
+    </div>
+  </div>
+</section>
+
+<script src="assets/js/data.js"></script>
+<script src="assets/js/app.js"></script>
+<script>
+  renderHeader("products");
+
+  const params  = new URLSearchParams(location.search);
+  let current   = params.get("cat") || "all";
+
+  const filters = document.getElementById("filters");
+  const grid    = document.getElementById("grid");
+
+  filters.innerHTML =
+    `<button class="chip" data-cat="all">الكل</button>` +
+    CATEGORIES.map(c => `<button class="chip" data-cat="${c.id}">${c.icon} ${c.name}</button>`).join("");
+
+  function render() {
+    const list = current === "all" ? PRODUCTS : PRODUCTS.filter(p => p.cat === current);
+
+    document.getElementById("title").textContent =
+      current === "all" ? "جميع المنتجات" : catName(current);
+    document.getElementById("count").textContent = `${list.length} منتج متاح`;
+
+    grid.innerHTML = list.map(productCard).join("");
+    document.getElementById("none").style.display = list.length ? "none" : "block";
+
+    document.querySelectorAll(".chip").forEach(b =>
+      b.classList.toggle("active", b.dataset.cat === current));
+
+    const url = current === "all" ? "products.html" : `products.html?cat=${current}`;
+    history.replaceState(null, "", url);
+  }
+
+  filters.addEventListener("click", e => {
+    const b = e.target.closest(".chip");
+    if (!b) return;
+    current = b.dataset.cat;
+    render();
+  });
+
+  render();
+  renderFooter();
+</script>
+</body>
+</html>

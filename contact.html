@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>تواصل معنا — Madinty Ratan</title>
+<meta name="description" content="تواصل مع Madinty Ratan — واتساب، اتصال، بريد إلكتروني، وموقع المصنع في أشمون محافظة المنوفية على الخريطة.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+
+<!-- بانر الصفحة -->
+<div class="page-head">
+  <div class="wrap">
+    <h1>تواصل معنا</h1>
+    <p>إحنا موجودين طول اليوم — اختار الطريقة اللي تناسبك</p>
+  </div>
+</div>
+
+<!-- طرق التواصل -->
+<section>
+  <div class="wrap">
+    <div class="contact-cards" id="cards"></div>
+  </div>
+</section>
+
+<!-- الخريطة + نموذج سريع -->
+<section style="padding-top:0">
+  <div class="wrap contact-grid">
+
+    <!-- الخريطة -->
+    <div>
+      <div class="sec-head" style="text-align:right;margin-bottom:14px">
+        <h2 style="font-size:22px">موقعنا على الخريطة</h2>
+        <p id="mapLabel"></p>
+      </div>
+      <div class="map-box">
+        <iframe id="map" title="موقع Madinty Ratan على الخريطة"
+                loading="lazy" referrerpolicy="no-referrer-when-downgrade"
+                allowfullscreen></iframe>
+      </div>
+      <a class="btn btn-line btn-block" id="mapLink" style="margin-top:12px"
+         href="#" target="_blank" rel="noopener">📍 افتح الموقع في خرائط جوجل</a>
+    </div>
+
+    <!-- نموذج سريع -->
+    <div class="panel">
+      <h2>ابعتلنا رسالة</h2>
+      <p style="font-size:13.5px;color:var(--ink-3);margin:-6px 0 16px">
+        اكتب استفسارك وهيتبعت على الواتساب فورًا، وهنرد عليك في أسرع وقت.
+      </p>
+
+      <form id="msgForm" novalidate>
+        <div class="field">
+          <label for="cName">الاسم <span class="req">*</span></label>
+          <input id="cName" type="text" placeholder="اسمك" autocomplete="name">
+          <div class="err">من فضلك اكتب اسمك.</div>
+        </div>
+
+        <div class="field">
+          <label for="cPhone">رقم الموبايل <span class="req">*</span></label>
+          <input id="cPhone" type="tel" inputmode="numeric" dir="ltr" placeholder="01xxxxxxxxx" autocomplete="tel">
+          <div class="err">رقم موبايل مصري غير صحيح.</div>
+        </div>
+
+        <div class="field">
+          <label for="cSubject">موضوع الرسالة</label>
+          <select id="cSubject">
+            <option>استفسار عن منتج</option>
+            <option>طلب سعر خاص / كافيهات</option>
+            <option>تنفيذ مقاسات خاصة</option>
+            <option>استفسار عن التوصيل</option>
+            <option>خدمة ما بعد البيع</option>
+            <option>موضوع آخر</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="cMsg">رسالتك <span class="req">*</span></label>
+          <textarea id="cMsg" placeholder="اكتب استفسارك بالتفصيل..."></textarea>
+          <div class="err">اكتب رسالتك (10 أحرف على الأقل).</div>
+        </div>
+
+        <button type="button" class="btn btn-wa btn-block" id="sendMsg">💬 إرسال على الواتساب</button>
+      </form>
+    </div>
+  </div>
+</section>
+
+<!-- دعوة -->
+<section style="padding-top:0">
+  <div class="wrap">
+    <div class="cta-band">
+      <h2>عايز تشوف المنتجات الأول؟</h2>
+      <p>اتصفّح الأقسام واختار اللي يناسبك، وكلّمنا لو محتاج مساعدة في الاختيار.</p>
+      <div class="btns">
+        <a class="btn btn-gold" href="products.html">تصفّح المنتجات</a>
+        <a class="btn btn-line" href="about.html">من نحن</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script src="assets/js/data.js"></script>
+<script src="assets/js/app.js"></script>
+<script>
+  renderHeader("contact");
+
+  /* ---------- كروت التواصل ---------- */
+  const CONTACTS = [
+    { ic: ICONS.whats, t: "واتساب", v: STORE.whatsappDisplay, href: "https://wa.me/" + STORE.whatsapp,
+      note: "أسرع طريقة للرد", blank: true, wa: true },
+    { ic: ICONS.phone, t: "اتصال مباشر", v: STORE.whatsappDisplay, href: "tel:" + STORE.whatsappDisplay,
+      note: "من 9 ص لـ 9 م" },
+    { ic: ICONS.mail,  t: "البريد الإلكتروني", v: STORE.email, href: "mailto:" + STORE.email,
+      note: "للطلبات بالجملة والشراكات" },
+    { ic: ICONS.pin,   t: "مكان المصنع", v: STORE.factory, href: MAP_LINK,
+      note: "الزيارة والمعاينة متاحة", blank: true },
+    { ic: ICONS.clock, t: "مواعيد العمل", v: STORE.hours, note: "الجمعة إجازة" },
+    { ic: ICONS.truck, t: "التوصيل", v: "لكل المحافظات", note: STORE.freeShipping }
+  ];
+
+  document.getElementById("cards").innerHTML = CONTACTS.map(c => {
+    const inner = `
+      <div class="ic${c.wa ? " wa" : ""}">${c.ic}</div>
+      <h3>${c.t}</h3>
+      <div class="val" dir="auto">${c.v}</div>
+      <p>${c.note}</p>`;
+    return c.href
+      ? `<a class="c-card" href="${c.href}"${c.blank ? ' target="_blank" rel="noopener"' : ""}>${inner}</a>`
+      : `<div class="c-card">${inner}</div>`;
+  }).join("");
+
+  /* ---------- الخريطة ---------- */
+  document.getElementById("map").src        = MAP_EMBED;
+  document.getElementById("mapLink").href   = MAP_LINK;
+  document.getElementById("mapLabel").textContent = STORE.factory;
+
+  /* ---------- إرسال الرسالة ---------- */
+  const isPhoneEG = v => /^01[0125][0-9]{8}$/.test(v.replace(/\s|-/g, ""));
+  const flag = (el, ok) => { el.closest(".field").classList.toggle("invalid", !ok); return ok; };
+
+  document.getElementById("sendMsg").addEventListener("click", () => {
+    const n = document.getElementById("cName");
+    const p = document.getElementById("cPhone");
+    const m = document.getElementById("cMsg");
+    const s = document.getElementById("cSubject").value;
+
+    let ok = true;
+    ok = flag(n, n.value.trim().length >= 2) && ok;
+    ok = flag(p, isPhoneEG(p.value.trim())) && ok;
+    ok = flag(m, m.value.trim().length >= 10) && ok;
+
+    if (!ok) {
+      toast("راجع البيانات المطلوبة");
+      document.querySelector(".field.invalid input, .field.invalid textarea")?.focus();
+      return;
+    }
+
+    const text = [
+      "💬 *رسالة من صفحة تواصل معنا*",
+      "",
+      `الاسم: ${n.value.trim()}`,
+      `الموبايل: ${p.value.trim()}`,
+      `الموضوع: ${s}`,
+      "",
+      "الرسالة:",
+      m.value.trim()
+    ].join("\n");
+
+    window.open(`https://wa.me/${STORE.whatsapp}?text=${encodeURIComponent(text)}`, "_blank");
+    toast("تم فتح الواتساب — اضغط إرسال ✓");
+    n.value = ""; p.value = ""; m.value = "";
+  });
+
+  renderFooter();
+</script>
+</body>
+</html>
