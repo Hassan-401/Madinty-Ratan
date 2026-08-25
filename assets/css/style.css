@@ -101,6 +101,7 @@ header.site.overlay.scrolled {
   font-size: 19px;
   font-weight: 700;
   letter-spacing: 0.05em;
+  margin-bottom: 10px;
 }
 .logo .txt em {
   display: block;
@@ -443,35 +444,85 @@ section {
 /* ---------- Categories ---------- */
 .cats {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 14px;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 18px;
 }
 .cat {
   background: var(--card);
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  padding: 22px 16px;
-  text-align: center;
-  transition: 0.15s;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: 0.18s;
 }
 .cat:hover {
   border-color: var(--gold);
-  transform: translateY(-3px);
+  transform: translateY(-4px);
   box-shadow: var(--shadow-lg);
 }
-.cat .ic {
-  font-size: 28px;
-  margin-bottom: 8px;
+
+/* صورة القسم — الأيقونة تحتها كبديل لو الصورة ناقصة */
+.cat-img {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  background: linear-gradient(150deg, #2c2620 0%, #141210 100%);
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+.cat-img .ic {
+  font-size: 34px;
+  opacity: 0.75;
+}
+.cat-img img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.4s;
+}
+.cat:hover .cat-img img {
+  transform: scale(1.06);
+}
+.cat-img::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    transparent 45%,
+    rgba(18, 15, 13, 0.45) 100%
+  );
+  pointer-events: none;
+}
+
+.cat-body {
+  padding: 15px 16px 17px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
 }
 .cat h3 {
   margin: 0 0 4px;
-  font-size: 16px;
+  font-size: 16.5px;
   font-weight: 600;
 }
 .cat p {
-  margin: 0;
+  margin: 0 0 10px;
   font-size: 12.5px;
   color: var(--ink-3);
+  flex: 1;
+}
+.cat-more {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gold);
+}
+.cat:hover .cat-more {
+  color: var(--gold-2);
 }
 
 /* ---------- Product grid ---------- */

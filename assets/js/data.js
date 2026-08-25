@@ -26,13 +26,13 @@ const STORE = {
 const MAP_EMBED = `https://www.google.com/maps?q=${encodeURIComponent(STORE.map.query)}&z=${STORE.map.zoom}&hl=ar&output=embed`;
 const MAP_LINK  = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(STORE.map.query)}`;
 
+/* img = صورة القسم في assets/img/categories/ — لو الصورة ناقصة بتظهر الأيقونة بدلها */
 const CATEGORIES = [
-  { id: "iron",    name: "أطقم حديد علب",       icon: "🛋️", desc: "حديد معالج ودهان فرن إلكتروستاتك" },
-  { id: "rattan",  name: "أطقم رتان",           icon: "🌿", desc: "رتان بيور مجدول يدويًا" },
-  { id: "debar",   name: "أطقم دبار",           icon: "🪑", desc: "دبار بيور مقاوم للماء والشمس" },
-  { id: "swing",   name: "مراجيح وكراسي هزاز",  icon: "🎏", desc: "استرخاء لحديقتك وبلكونتك" },
-  { id: "shade",   name: "برجولات وشماسي",      icon: "☂️", desc: "ظل أنيق يقاوم العوامل الجوية" },
-  { id: "extra",   name: "إكسسوارات وقطع مفردة", icon: "✨", desc: "ترابيزات · بف · شنط رتان" }
+  { id: "iron",   name: "أطقم حديد علب",      icon: "🛋️", img: "assets/img/categories/iron.jpg",   desc: "حديد معالج ودهان فرن إلكتروستاتك" },
+  { id: "rattan", name: "أطقم رتان",          icon: "🌿", img: "assets/img/categories/rattan.jpg", desc: "رتان بيور مجدول يدويًا" },
+  { id: "debar",  name: "أطقم دبار",          icon: "🪑", img: "assets/img/categories/debar.jpg",  desc: "دبار بيور مقاوم للماء والشمس" },
+  { id: "swing",  name: "مراجيح وكراسي هزاز", icon: "🎏", img: "assets/img/categories/swing.jpg",  desc: "استرخاء لحديقتك وبلكونتك" },
+  { id: "shade",  name: "برجولات وشماسي",     icon: "☂️", img: "assets/img/categories/shade.jpg",  desc: "ظل أنيق يقاوم العوامل الجوية" }
 ];
 
 /* السعر بالجنيه المصري. oldPrice اختياري (يظهر كسعر قبل الخصم) */
@@ -129,21 +129,21 @@ const PRODUCTS = [
     specs: ["حديد علب معالج ودهان فرن", "مقاسات حسب الطلب", "تركيب بواسطة فنيين المصنع", "مناسبة للروف والحدائق"]
   },
   {
-    id: "p-114", cat: "extra", img: "assets/img/p2.jpg",
+    id: "p-114", cat: "rattan", img: "assets/img/p2.jpg",
     name: "شنطة سوق رتان",
     short: "شنطة سوق مجدولة رتان بيور بعجل",
     price: 2000, warranty: "سنة",
     specs: ["هيكل حديد معالج مدهون فرن", "مجدولة برتان بيور ضد الماء والشمس", "مزودة بعجل سهل الحركة", "خفيفة وسهلة الاستخدام"]
   },
   {
-    id: "p-115", cat: "extra", img: "assets/img/p3.jpg",
+    id: "p-115", cat: "iron", img: "assets/img/p3.jpg",
     name: "ترابيزة سفرة 8 كراسي",
     short: "ترابيزة 2 متر × 80 سم + 8 كراسي",
     price: 27000, oldPrice: 31000, warranty: "10 سنوات",
     specs: ["هيكل حديد علب معالج", "سطح مقاوم للحرارة والماء", "كراسي بشلت مريحة", "مناسبة للروف والحدائق والكافيهات"]
   },
   {
-    id: "p-116", cat: "extra", img: "assets/img/p4.jpg",
+    id: "p-116", cat: "rattan", img: "assets/img/p4.jpg",
     name: "بف رتان (قطعتان)",
     short: "2 بف رتان بشلت وتر بروف",
     price: 2600, warranty: "سنة",

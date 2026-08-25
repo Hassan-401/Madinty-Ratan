@@ -108,9 +108,16 @@
       document.getElementById("catsGrid").innerHTML = CATEGORIES.map(
         (c) => `
     <a class="cat" href="products.html?cat=${c.id}">
-      <div class="ic">${c.icon}</div>
-      <h3>${c.name}</h3>
-      <p>${c.desc}</p>
+      <div class="cat-img">
+        <span class="ic">${c.icon}</span>
+        ${c.img ? `<img src="${c.img}" alt="${c.name}" loading="lazy"
+                        onerror="this.remove()">` : ""}
+      </div>
+      <div class="cat-body">
+        <h3>${c.name}</h3>
+        <p>${c.desc}</p>
+        <span class="cat-more">تصفّح القسم ‹</span>
+      </div>
     </a>`,
       ).join("");
 
