@@ -25,6 +25,7 @@
   <div class="empty" id="doneState" style="display:none">
     <div class="ic">✅</div>
     <h2 style="margin:0 0 8px;color:var(--ink)">تم إرسال طلبك على الواتساب</h2>
+    <p>رقم طلبك: <b id="doneNo" dir="ltr"></b></p>
     <p>لو لم تُفتح نافذة الواتساب تلقائيًا، اضغط الزر التالي لإرسال الطلب.</p>
     <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:14px">
       <a class="btn btn-wa" id="resendLink" href="#" target="_blank" rel="noopener">💬 إرسال الطلب مرة أخرى</a>
@@ -87,8 +88,9 @@
       <h2>🧾 ملخص الطلب</h2>
       <div class="sum"><span>عدد القطع</span><strong id="sCount">0</strong></div>
       <div class="sum"><span>الإجمالي الفرعي</span><strong id="sSub">0</strong></div>
-      <div class="sum"><span>الشحن</span><strong style="color:var(--forest)">يُحدد عند التأكيد</strong></div>
+      <div class="sum"><span>الشحن</span><strong id="sShip">اختر المحافظة أولًا</strong></div>
       <div class="sum total"><span>الإجمالي</span><span id="sTotal">0</span></div>
+      <p id="shipHint" style="font-size:12.5px;color:var(--ink-3);margin:6px 0 0"></p>
 
       <button class="btn btn-wa btn-block" style="margin-top:16px" id="submitBtn">
         ✅ تأكيد الطلب وإرساله على الواتساب
@@ -112,15 +114,18 @@
   const layout = document.getElementById("cartLayout");
   const empty  = document.getElementById("emptyState");
   const done   = document.getElementById("doneState");
-
-  /* المحافظات */
   const govSel = document.getElementById("gov");
-  govSel.innerHTML += GOVS.map(g => `<option value="${g}">${g}</option>`).join("");
 
-  /* نص الشحن في صندوق المعلومات */
+  /* المحافظات + سعر الشحن جنب كل واحدة */
+  govSel.innerHTML += GOVS.map(g => {
+    const c = SHIPPING[g];
+    const tag = c === null ? "يُحدد عند التأكيد" : c === 0 ? "شحن مجاني" : money(c);
+    return `<option value="${g}">${g} — ${tag}</option>`;
+  }).join("");
+
   document.getElementById("shipNote").textContent = "🚚 " + STORE.freeShipping;
 
-  /* رسم العربة */
+  /* ---------- رسم العربة ---------- */
   function renderCart() {
     const cart = getCart();
     if (!cart.length) {
@@ -132,42 +137,66 @@
     empty.style.display  = "none";
 
     document.getElementById("lines").innerHTML = cart.map(l => {
-      const p = getProduct(l.id);
-      if (!p) return "";
+      const p    = getProduct(l.id);
+      const key  = lineKey(l);
+      const unit = linePrice(l);
+      const vn   = lineVariantName(l);
+      const cn   = lineColorName(l);
       return `
       <div class="line">
-        <img src="${p.img}" alt="${esc(p.name)}">
+        <img src="${imgURL(p.img)}" alt="${esc(p.name)}">
         <div class="info">
-          <h4><a href="product.html?id=${p.id}">${esc(p.name)}</a></h4>
-          <div class="u">${money(p.price)} × ${l.qty}</div>
-          <div class="price" style="font-size:15.5px">${money(p.price * l.qty)}</div>
+          <h4><a href="product.html?id=${encodeURIComponent(p.id)}">${esc(p.name)}</a></h4>
+          ${vn ? `<div class="opt-line">النوع: ${esc(vn)}</div>` : ""}
+          ${cn ? `<div class="opt-line">لون الشلت: ${esc(cn)}</div>` : ""}
+          <div class="u">${money(unit)} × ${l.qty}</div>
+          <div class="price" style="font-size:15.5px">${money(unit * l.qty)}</div>
         </div>
         <div class="ctrl">
           <div class="qty">
-            <button type="button" onclick="step('${p.id}',-1)">−</button>
+            <button type="button" data-act="dec" data-key="${esc(key)}">−</button>
             <span>${l.qty}</span>
-            <button type="button" onclick="step('${p.id}',1)">+</button>
+            <button type="button" data-act="inc" data-key="${esc(key)}">+</button>
           </div>
-          <button class="rm" onclick="drop('${p.id}')">حذف</button>
+          <button class="rm" data-act="rm" data-key="${esc(key)}">حذف</button>
         </div>
       </div>`;
     }).join("");
 
-    document.getElementById("sCount").textContent = cartCount() + " قطعة";
-    document.getElementById("sSub").textContent   = money(cartTotal());
-    document.getElementById("sTotal").textContent = money(cartTotal());
+    paintSummary();
   }
 
-  function step(id, d) {
-    const line = getCart().find(l => l.id === id);
-    if (!line) return;
-    if (line.qty + d < 1) { drop(id); return; }
-    setQty(id, line.qty + d);
+  /* أزرار الكمية والحذف */
+  document.getElementById("lines").addEventListener("click", e => {
+    const b = e.target.closest("[data-act]");
+    if (!b) return;
+    const key = b.dataset.key;
+    if (b.dataset.act === "rm") { removeFromCart(key); toast("تم حذف المنتج"); }
+    else {
+      const line = getCart().find(l => lineKey(l) === key);
+      if (!line) return;
+      const next = line.qty + (b.dataset.act === "inc" ? 1 : -1);
+      if (next < 1) removeFromCart(key); else setQty(key, next);
+    }
     renderCart();
-  }
-  function drop(id) { removeFromCart(id); renderCart(); toast("تم حذف المنتج"); }
+  });
 
-  /* التحقق من البيانات */
+  /* ---------- ملخص الطلب ---------- */
+  function paintSummary() {
+    const sub  = cartTotal();
+    const gov  = govSel.value;
+    const ship = shippingCost(gov);
+
+    document.getElementById("sCount").textContent = cartCount() + " قطعة";
+    document.getElementById("sSub").textContent   = money(sub);
+    document.getElementById("sShip").textContent  = shippingLabel(gov);
+    document.getElementById("sTotal").textContent = money(sub + (ship || 0));
+    document.getElementById("shipHint").textContent =
+      !gov ? "" : ship === null ? "مصاريف الشحن للمحافظة دي بتتحدد وقت تأكيد الطلب." : "";
+  }
+  govSel.addEventListener("change", paintSummary);
+
+  /* ---------- التحقق من البيانات ---------- */
   const isPhone = v => /^01[0125][0-9]{8}$/.test(v.replace(/\s|-/g, ""));
 
   function mark(el, ok) {
@@ -179,19 +208,18 @@
     const name    = document.getElementById("name");
     const phone   = document.getElementById("phone");
     const phone2  = document.getElementById("phone2");
-    const gov     = document.getElementById("gov");
     const address = document.getElementById("address");
 
     let ok = true;
     ok = mark(name,    name.value.trim().length >= 2) && ok;
     ok = mark(phone,   isPhone(phone.value.trim())) && ok;
     ok = mark(phone2,  !phone2.value.trim() || isPhone(phone2.value.trim())) && ok;
-    ok = mark(gov,     gov.value !== "") && ok;
+    ok = mark(govSel,  govSel.value !== "") && ok;
     ok = mark(address, address.value.trim().length >= 10) && ok;
     return ok;
   }
 
-  /* تأكيد الطلب */
+  /* ---------- تأكيد الطلب ---------- */
   document.getElementById("submitBtn").addEventListener("click", () => {
     if (!getCart().length) { toast("العربة فارغة"); return; }
 
@@ -205,15 +233,18 @@
       name:    document.getElementById("name").value.trim(),
       phone:   document.getElementById("phone").value.trim(),
       phone2:  document.getElementById("phone2").value.trim(),
-      gov:     document.getElementById("gov").value,
+      gov:     govSel.value,
       address: document.getElementById("address").value.trim(),
       notes:   document.getElementById("notes").value.trim()
     };
 
-    const url = `https://wa.me/${STORE.whatsapp}?text=${encodeURIComponent(buildOrderMessage(customer))}`;
+    const order = buildOrder(customer);
+    addOrder(order);                       /* يتسجّل في لوحة التحكم */
+    const url = orderWhatsAppUrl(order);
     window.open(url, "_blank");
 
     document.getElementById("resendLink").href = url;
+    document.getElementById("doneNo").textContent = order.no;
     clearCart();
     layout.style.display = "none";
     empty.style.display  = "none";

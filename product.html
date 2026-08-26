@@ -30,7 +30,11 @@
 
   const id = new URLSearchParams(location.search).get("id");
   const p  = getProduct(id);
-  let qty  = 1;
+
+  /* الاختيارات الحالية */
+  let qty     = 1;
+  let variant = p && p.variants && p.variants.length ? 0 : null;
+  let color   = null;
 
   if (!p) {
     document.getElementById("detail").innerHTML = `
@@ -43,25 +47,73 @@
   } else {
     document.title = p.name + " — Madinty Ratan";
     document.getElementById("crumbs").innerHTML =
-      `<a href="index.html">الرئيسية</a> / <a href="products.html?cat=${p.cat}">${catName(p.cat)}</a> / ${esc(p.name)}`;
+      `<a href="index.html">الرئيسية</a> / <a href="products.html?cat=${encodeURIComponent(p.cat)}">${esc(catName(p.cat))}</a> / ${esc(p.name)}`;
+
+    /* --- كتل اختيارية حسب بيانات المنتج --- */
+    const variantsBlock = !(p.variants && p.variants.length) ? "" : `
+      <div class="opt">
+        <span class="opt-h">اختر نوع الطقم <b class="req">*</b></span>
+        <div class="variants" id="variants">
+          ${p.variants.map((v, i) => `
+            <button type="button" class="variant${i === 0 ? " on" : ""}" data-i="${i}">
+              <b>${esc(v.name)}</b>
+              ${v.components && v.components.length ? `<span>${esc(v.components.join(" + "))}</span>` : ""}
+              ${v.loadCapacity ? `<span>تتحمل حتى ${esc(v.loadCapacity)}</span>` : ""}
+              ${v.price != null ? `<em>${money(v.price)}</em>` : ""}
+            </button>`).join("")}
+        </div>
+      </div>`;
+
+    const colorsBlock = !p.cushions ? "" : `
+      <div class="opt">
+        <span class="opt-h">لون الشلت <small id="colorName">(اختياري — نرشّحلك في الواتساب لو سِبته)</small></span>
+        <div class="swatches" id="swatches">
+          ${CUSHION_COLORS.map(c => `
+            <button type="button" class="sw" data-id="${c.id}" title="${esc(c.name)}"
+                    style="--sw:${c.hex}" aria-label="${esc(c.name)}"></button>`).join("")}
+        </div>
+      </div>`;
+
+    const listBlock = (title, items) => !items || !items.length ? "" : `
+      <div class="opt">
+        <span class="opt-h">${title}</span>
+        <div class="tags">${items.map(x => `<span class="tag">${esc(x)}</span>`).join("")}</div>
+      </div>`;
+
+    const dimsBlock = !(p.dims && p.dims.length) ? "" : `
+      <div class="opt">
+        <span class="opt-h">المقاسات</span>
+        <div class="tags">${p.dims.map(d => `<span class="tag">${esc(d.label)}: ${esc(d.value)}</span>`).join("")}</div>
+      </div>`;
 
     const off = p.oldPrice ? Math.round((1 - p.price / p.oldPrice) * 100) : 0;
 
     document.getElementById("detail").innerHTML = `
     <div class="p-detail">
-      <div class="photo"><img src="${p.img}" alt="${esc(p.name)}"></div>
+      <div class="photo"><img src="${imgURL(p.img)}" alt="${esc(p.name)}"></div>
       <div>
-        <span class="cat-tag" style="color:var(--gold);font-weight:600;font-size:13px">${catName(p.cat)}</span>
+        <span class="cat-tag" style="color:var(--gold);font-weight:600;font-size:13px">${esc(catName(p.cat))}</span>
         <h1>${esc(p.name)}</h1>
         <p class="short">${esc(p.short)}</p>
-        <div class="price">${money(p.price)}
-          ${p.oldPrice ? `<span class="old">${money(p.oldPrice)}</span>` : ""}
-          ${off ? `<span class="badge" style="position:static;display:inline-block;margin-inline-start:8px">وفر ${off}%</span>` : ""}
-        </div>
+        <div class="price" id="priceBox"></div>
+
+        ${p.components && p.components.length ? `
+          <div class="opt">
+            <span class="opt-h">مكونات الطقم</span>
+            <div class="tags">${p.components.map(c => `<span class="tag">${esc(c)}</span>`).join("")}</div>
+          </div>` : ""}
+
+        ${variantsBlock}
+        ${dimsBlock}
+        ${listBlock("ألوان الحديد", p.frameColors)}
+        ${listBlock("ألوان الجدل", p.weaveColors)}
+        ${colorsBlock}
+        ${p.colorsNote ? `<p class="note">🎨 ${esc(p.colorsNote)}</p>` : ""}
 
         <ul class="meta">
           ${p.specs.map(s => `<li>${esc(s)}</li>`).join("")}
-          <li>ضمان ${esc(p.warranty)}</li>
+          ${p.loadCapacity ? `<li>الحمولة: ${esc(p.loadCapacity)}</li>` : ""}
+          ${p.warranty ? `<li>${esc(p.warranty)}</li>` : ""}
         </ul>
 
         <div class="buy">
@@ -70,8 +122,8 @@
             <span id="q">1</span>
             <button type="button" onclick="changeQty(1)">+</button>
           </div>
-          <button class="btn btn-dark" onclick="addToCart('${p.id}', qty)">🛒 أضف للعربة</button>
-          <button class="btn btn-gold" onclick="addToCart('${p.id}', qty); location.href='cart.html'">اطلب الآن</button>
+          <button class="btn btn-dark" id="addBtn">🛒 أضف للعربة</button>
+          <button class="btn btn-gold" id="buyBtn">اطلب الآن</button>
         </div>
 
         <div class="infobox">
@@ -82,6 +134,55 @@
         </div>
       </div>
     </div>`;
+
+    /* --- السعر يتغيّر مع النوع المختار --- */
+    function currentPrice() {
+      const v = variant != null && p.variants ? p.variants[variant] : null;
+      return v && v.price != null ? v.price : p.price;
+    }
+    function currentOldPrice() {
+      const v = variant != null && p.variants ? p.variants[variant] : null;
+      if (v && v.price != null) return v.oldPrice ?? null;
+      return p.oldPrice ?? null;
+    }
+    function paintPrice() {
+      const now = currentPrice(), was = currentOldPrice();
+      const off = was ? Math.round((1 - now / was) * 100) : 0;
+      document.getElementById("priceBox").innerHTML =
+        `${money(now)}${was ? `<span class="old">${money(was)}</span>` : ""}` +
+        (off ? `<span class="badge" style="position:static;display:inline-block;margin-inline-start:8px">وفر ${off}%</span>` : "");
+    }
+    paintPrice();
+
+    /* اختيار النوع */
+    document.getElementById("variants")?.addEventListener("click", e => {
+      const b = e.target.closest(".variant");
+      if (!b) return;
+      variant = Number(b.dataset.i);
+      document.querySelectorAll("#variants .variant")
+        .forEach(x => x.classList.toggle("on", x === b));
+      paintPrice();
+    });
+
+    /* اختيار لون الشلت */
+    document.getElementById("swatches")?.addEventListener("click", e => {
+      const b = e.target.closest(".sw");
+      if (!b) return;
+      const picked = Number(b.dataset.id);
+      color = color === picked ? null : picked;         /* الضغط تاني يلغي الاختيار */
+      document.querySelectorAll("#swatches .sw")
+        .forEach(x => x.classList.toggle("on", color != null && Number(x.dataset.id) === color));
+      const c = color != null ? colorById(color) : null;
+      document.getElementById("colorName").textContent =
+        c ? "— " + c.name : "(اختياري — نرشّحلك في الواتساب لو سِبته)";
+    });
+
+    document.getElementById("addBtn").addEventListener("click", () =>
+      addToCart(p.id, qty, variant, color));
+    document.getElementById("buyBtn").addEventListener("click", () => {
+      addToCart(p.id, qty, variant, color);
+      location.href = "cart.html";
+    });
 
     const rel = PRODUCTS.filter(x => x.cat === p.cat && x.id !== p.id).slice(0, 4);
     if (rel.length) document.getElementById("related").innerHTML = rel.map(productCard).join("");

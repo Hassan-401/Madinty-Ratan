@@ -220,7 +220,7 @@ header.site.overlay.scrolled {
   color: #fff;
   overflow: hidden;
   padding: 0;
-  background: #141210 url("../img/hero.jpg") center/cover no-repeat;
+  background: #141210 url("../img/hero.webp") center/cover no-repeat;
 }
 .hero::before {
   content: "";
@@ -339,7 +339,7 @@ header.site.overlay.scrolled {
   color: #fff;
   padding: 56px 0;
   text-align: center;
-  background: #141210 url("../img/hero.jpg") center/cover no-repeat;
+  background: #141210 url("../img/hero.webp") center/cover no-repeat;
 }
 .page-head::before {
   content: "";
@@ -546,14 +546,14 @@ section {
 }
 .card .thumb {
   position: relative;
-  aspect-ratio: 1/1;
+  aspect-ratio: 3/4;
   overflow: hidden;
   background: var(--soft);
 }
 .card .thumb img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
 }
 .badge {
   position: absolute;
@@ -652,7 +652,14 @@ section {
   border: 1px solid var(--line);
   border-radius: var(--radius);
   overflow: hidden;
-  background: #fff;
+  background: var(--soft);
+  display: grid;
+  place-items: center;
+}
+.p-detail .photo img {
+  max-height: 660px;
+  width: auto;
+  object-fit: contain;
 }
 .p-detail h1 {
   margin: 6px 0 8px;
@@ -762,7 +769,8 @@ section {
 .line img {
   width: 78px;
   height: 78px;
-  object-fit: cover;
+  object-fit: contain;
+  background: var(--soft);
   border-radius: 10px;
   flex: none;
 }
@@ -1361,4 +1369,117 @@ a.c-card:hover {
     width: 30px;
     height: 30px;
   }
+}
+
+/* ---------- خيارات المنتج (النوع / الألوان / المقاسات) ---------- */
+.opt {
+  margin: 16px 0;
+}
+.opt-h {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-2);
+  margin-bottom: 9px;
+}
+.opt-h small {
+  font-weight: 400;
+  color: var(--ink-3);
+}
+.opt-h .req {
+  color: var(--terra);
+}
+
+/* أنواع الطقم */
+.variants {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 10px;
+}
+.variant {
+  text-align: start;
+  border: 1.5px solid var(--line);
+  background: #fff;
+  border-radius: 12px;
+  padding: 11px 13px;
+  cursor: pointer;
+  display: grid;
+  gap: 2px;
+  transition: 0.16s;
+}
+.variant:hover {
+  border-color: var(--gold-2);
+}
+.variant.on {
+  border-color: var(--gold);
+  background: #fdfaf3;
+  box-shadow: 0 0 0 3px rgba(168, 130, 47, 0.12);
+}
+.variant b {
+  font-size: 14px;
+}
+.variant span {
+  font-size: 12.5px;
+  color: var(--ink-3);
+  line-height: 1.5;
+}
+.variant em {
+  font-style: normal;
+  font-weight: 700;
+  color: var(--gold);
+  font-size: 14px;
+  margin-top: 3px;
+}
+
+/* ألوان الشلت */
+.swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.sw {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1px solid rgba(20, 18, 16, 0.18);
+  background: var(--sw);
+  cursor: pointer;
+  padding: 0;
+  transition: 0.15s;
+}
+.sw:hover {
+  transform: scale(1.12);
+}
+.sw.on {
+  box-shadow:
+    0 0 0 2px var(--bg),
+    0 0 0 4px var(--gold);
+}
+
+/* وسوم (المكونات / المقاسات / ألوان الحديد والجدل) */
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+.tag {
+  background: var(--soft);
+  border-radius: 8px;
+  padding: 5px 11px;
+  font-size: 12.5px;
+  color: var(--ink-2);
+}
+.note {
+  font-size: 13px;
+  color: var(--forest);
+  background: rgba(44, 70, 50, 0.07);
+  border-radius: 9px;
+  padding: 9px 12px;
+  margin: 14px 0 0;
+}
+
+/* سطر الخيارات جوّه العربة */
+.line .opt-line {
+  font-size: 12.5px;
+  color: var(--ink-3);
 }

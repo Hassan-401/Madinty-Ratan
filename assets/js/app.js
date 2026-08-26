@@ -6,10 +6,16 @@
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const money = (n) => Number(n).toLocaleString("en-US") + " ج.م";
-const catName = (id) => (CATEGORIES.find((c) => c.id === id) || {}).name || "";
-const getProduct = (id) => PRODUCTS.find((p) => p.id === id);
+/** ترميز مسار الصورة (الأسماء عربية وفيها مسافات) — يشتغل مع المسار الخام أو المرمّز */
+function imgURL(s) {
+  try {
+    return encodeURI(decodeURI(String(s || "")));
+  } catch (e) {
+    return encodeURI(String(s || ""));
+  }
+}
 const esc = (s) =>
-  String(s).replace(
+  String(s ?? "").replace(
     /[&<>"']/g,
     (c) =>
       ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[
@@ -17,12 +23,80 @@ const esc = (s) =>
       ],
   );
 
-/* ---------- العربة (localStorage) ---------- */
+/* ============================================================
+   قاعدة البيانات
+   ------------------------------------------------------------
+   الافتراضي جاي من data.js. لوحة التحكم (admin.html) بتحفظ نسخة
+   معدّلة في المتصفح تحت المفتاح ده، والموقع بيقراها لو موجودة.
+   ============================================================ */
+const DB_KEY = "mr_db_v1";
+
+let CATEGORIES = DEFAULT_CATEGORIES;
+let PRODUCTS = DEFAULT_PRODUCTS;
+
+function readDB() {
+  try {
+    const raw = localStorage.getItem(DB_KEY);
+    if (!raw) return null;
+    const db = JSON.parse(raw);
+    if (!Array.isArray(db.categories) || !Array.isArray(db.products))
+      return null;
+    return db;
+  } catch (e) {
+    return null;
+  }
+}
+function writeDB(db) {
+  localStorage.setItem(DB_KEY, JSON.stringify(db));
+}
+function resetDB() {
+  localStorage.removeItem(DB_KEY);
+}
+
+(function loadDB() {
+  const db = readDB();
+  if (db) {
+    CATEGORIES = db.categories;
+    PRODUCTS = db.products;
+  }
+})();
+
+const catName = (id) => (CATEGORIES.find((c) => c.id === id) || {}).name || "";
+const getProduct = (id) => PRODUCTS.find((p) => p.id === id);
+const colorById = (id) => CUSHION_COLORS.find((c) => c.id === Number(id));
+
+/* ============================================================
+   العربة (localStorage)
+   ------------------------------------------------------------
+   السطر = { id, qty, v: رقم نوع الطقم أو null, c: رقم لون الشلت أو null }
+   نفس المنتج بنوع أو لون مختلف = سطر مستقل.
+   ============================================================ */
 const CART_KEY = "mr_cart_v1";
+
+const lineKey = (l) => `${l.id}|${l.v ?? ""}|${l.c ?? ""}`;
+
+/** سعر الوحدة: سعر النوع المختار لو ليه سعر، وإلا سعر المنتج */
+function linePrice(l) {
+  const p = getProduct(l.id);
+  if (!p) return 0;
+  const v = l.v != null && p.variants ? p.variants[l.v] : null;
+  return v && v.price != null ? v.price : p.price || 0;
+}
+function lineVariantName(l) {
+  const p = getProduct(l.id);
+  const v = p && l.v != null && p.variants ? p.variants[l.v] : null;
+  return v ? v.name : "";
+}
+function lineColorName(l) {
+  const c = l.c != null ? colorById(l.c) : null;
+  return c ? c.name : "";
+}
 
 function getCart() {
   try {
-    return JSON.parse(localStorage.getItem(CART_KEY)) || [];
+    const cart = JSON.parse(localStorage.getItem(CART_KEY)) || [];
+    /* نتجاهل أي منتج اتشال من الكتالوج */
+    return cart.filter((l) => getProduct(l.id));
   } catch (e) {
     return [];
   }
@@ -31,23 +105,24 @@ function saveCart(cart) {
   localStorage.setItem(CART_KEY, JSON.stringify(cart));
   updateCartCount();
 }
-function addToCart(id, qty = 1) {
+function addToCart(id, qty = 1, v = null, c = null) {
   const cart = getCart();
-  const line = cart.find((l) => l.id === id);
+  const key = lineKey({ id, v, c });
+  const line = cart.find((l) => lineKey(l) === key);
   if (line) line.qty += qty;
-  else cart.push({ id, qty });
+  else cart.push({ id, qty, v, c });
   saveCart(cart);
   toast("تمت الإضافة إلى العربة ✓");
 }
-function setQty(id, qty) {
+function setQty(key, qty) {
   const cart = getCart();
-  const line = cart.find((l) => l.id === id);
+  const line = cart.find((l) => lineKey(l) === key);
   if (!line) return;
   line.qty = Math.max(1, qty);
   saveCart(cart);
 }
-function removeFromCart(id) {
-  saveCart(getCart().filter((l) => l.id !== id));
+function removeFromCart(key) {
+  saveCart(getCart().filter((l) => lineKey(l) !== key));
 }
 function clearCart() {
   saveCart([]);
@@ -56,10 +131,7 @@ function cartCount() {
   return getCart().reduce((s, l) => s + l.qty, 0);
 }
 function cartTotal() {
-  return getCart().reduce((s, l) => {
-    const p = getProduct(l.id);
-    return p ? s + p.price * l.qty : s;
-  }, 0);
+  return getCart().reduce((s, l) => s + linePrice(l) * l.qty, 0);
 }
 function updateCartCount() {
   const n = cartCount();
@@ -67,6 +139,77 @@ function updateCartCount() {
     el.textContent = n;
     el.style.display = n ? "grid" : "none";
   });
+}
+
+/* ---------- الشحن ---------- */
+/** @returns {number|null} التكلفة، أو null لو المحافظة بتتحدد عند التأكيد */
+function shippingCost(gov) {
+  if (!gov || !(gov in SHIPPING)) return null;
+  return SHIPPING[gov];
+}
+function shippingLabel(gov) {
+  const c = shippingCost(gov);
+  if (!gov) return "اختر المحافظة أولًا";
+  if (c === null) return "تُحدد عند التأكيد";
+  return c === 0 ? "مجانًا" : money(c);
+}
+
+/* ============================================================
+   الطلبات (localStorage) — مصدر بيانات لوحة التحكم
+   ============================================================ */
+const ORDERS_KEY = "mr_orders_v1";
+const ORDER_STATUSES = [
+  "جديد",
+  "تم التأكيد",
+  "قيد التجهيز",
+  "تم الشحن",
+  "تم التسليم",
+  "ملغي",
+];
+
+function getOrders() {
+  try {
+    return JSON.parse(localStorage.getItem(ORDERS_KEY)) || [];
+  } catch (e) {
+    return [];
+  }
+}
+function saveOrders(list) {
+  localStorage.setItem(ORDERS_KEY, JSON.stringify(list));
+}
+function addOrder(order) {
+  const list = getOrders();
+  list.unshift(order);
+  saveOrders(list);
+  return order;
+}
+
+/** يبني كائن الطلب من العربة + بيانات العميل */
+function buildOrder(customer) {
+  const cart = getCart();
+  const items = cart.map((l) => {
+    const p = getProduct(l.id);
+    return {
+      id: l.id,
+      name: p.name,
+      qty: l.qty,
+      price: linePrice(l),
+      variant: lineVariantName(l),
+      color: lineColorName(l),
+    };
+  });
+  const subtotal = items.reduce((s, i) => s + i.price * i.qty, 0);
+  const ship = shippingCost(customer.gov);
+  return {
+    no: "MR-" + Date.now().toString().slice(-6),
+    at: new Date().toISOString(),
+    status: ORDER_STATUSES[0],
+    customer,
+    items,
+    subtotal,
+    shipping: ship,
+    total: subtotal + (ship || 0),
+  };
 }
 
 /* ---------- إشعار سريع ---------- */
@@ -183,7 +326,7 @@ function renderFooter() {
       <div>
         <h4>تواصل معنا</h4>
         <ul>
-          <li>📞 <a href="tel:${STORE.whatsappDisplay}" dir="ltr">${STORE.whatsappDisplay}</a></li>
+          <li>📞 <a href="tel:${STORE.phone}" dir="ltr">${STORE.whatsappDisplay}</a></li>
           <li>💬 <a href="https://wa.me/${STORE.whatsapp}" target="_blank" rel="noopener">واتساب</a></li>
           <li>✉️ <a href="mailto:${STORE.email}" dir="ltr">${STORE.email}</a></li>
           <li>📍 المصنع: ${STORE.factory}</li>
@@ -200,57 +343,73 @@ function renderFooter() {
 /* ---------- كارت المنتج ---------- */
 function productCard(p) {
   const off = p.oldPrice ? Math.round((1 - p.price / p.oldPrice) * 100) : 0;
+  const pick = p.variants && p.variants.length; /* لازم يختار نوع الأول */
   return `
   <article class="card">
-    <a class="thumb" href="product.html?id=${p.id}">
+    <a class="thumb" href="product.html?id=${encodeURIComponent(p.id)}">
       ${off ? `<span class="badge">خصم ${off}%</span>` : ""}
-      <img src="${p.img}" alt="${esc(p.name)}" loading="lazy">
+      <img src="${imgURL(p.img)}" alt="${esc(p.name)}" loading="lazy">
     </a>
     <div class="body">
-      <span class="cat-tag">${catName(p.cat)}</span>
-      <h3><a href="product.html?id=${p.id}">${esc(p.name)}</a></h3>
+      <span class="cat-tag">${esc(catName(p.cat))}</span>
+      <h3><a href="product.html?id=${encodeURIComponent(p.id)}">${esc(p.name)}</a></h3>
       <p class="short">${esc(p.short)}</p>
-      <div class="price">${money(p.price)}${p.oldPrice ? `<span class="old">${money(p.oldPrice)}</span>` : ""}</div>
+      <div class="price">${pick ? "يبدأ من " : ""}${money(p.price)}${p.oldPrice ? `<span class="old">${money(p.oldPrice)}</span>` : ""}</div>
       <div class="actions">
-        <button class="btn btn-dark" onclick="addToCart('${p.id}')">أضف للعربة</button>
-        <a class="btn btn-line" href="product.html?id=${p.id}">تفاصيل</a>
+        ${
+          pick
+            ? `<a class="btn btn-dark" href="product.html?id=${encodeURIComponent(p.id)}">اختر النوع</a>`
+            : `<button class="btn btn-dark" onclick="addToCart('${esc(p.id)}')">أضف للعربة</button>`
+        }
+        <a class="btn btn-line" href="product.html?id=${encodeURIComponent(p.id)}">تفاصيل</a>
       </div>
     </div>
   </article>`;
 }
 
 /* ---------- رسالة الواتساب ---------- */
-function buildOrderMessage(customer) {
-  const cart = getCart();
-  const orderNo = "MR-" + Date.now().toString().slice(-6);
-  const lines = cart
-    .map((l, i) => {
-      const p = getProduct(l.id);
-      return `${i + 1}) ${p.name}\n   الكمية: ${l.qty} × ${money(p.price)} = ${money(p.price * l.qty)}`;
+function buildOrderMessage(order) {
+  const lines = order.items
+    .map((it, i) => {
+      const extra = [
+        it.variant ? `النوع: ${it.variant}` : null,
+        it.color ? `لون الشلت: ${it.color}` : null,
+      ]
+        .filter(Boolean)
+        .join(" — ");
+      return (
+        `${i + 1}) ${it.name}` +
+        (extra ? `\n   ${extra}` : "") +
+        `\n   الكمية: ${it.qty} × ${money(it.price)} = ${money(it.price * it.qty)}`
+      );
     })
     .join("\n");
 
-  const date = new Date().toLocaleString("ar-EG-u-nu-latn", {
+  const c = order.customer;
+  const date = new Date(order.at).toLocaleString("ar-EG-u-nu-latn", {
     dateStyle: "short",
     timeStyle: "short",
   });
 
   return [
     "🛒 *طلب جديد من موقع Madinty Ratan*",
-    `رقم الطلب: ${orderNo}`,
+    `رقم الطلب: ${order.no}`,
     "",
     "*🧾 المنتجات:*",
     lines,
     "",
-    `*💰 الإجمالي: ${money(cartTotal())}*`,
+    `الإجمالي الفرعي: ${money(order.subtotal)}`,
+    `الشحن (${c.gov}): ${order.shipping === null ? "يُحدد عند التأكيد" : order.shipping === 0 ? "مجانًا" : money(order.shipping)}`,
+    `*💰 الإجمالي: ${money(order.total)}*` +
+      (order.shipping === null ? " + الشحن" : ""),
     "",
     "*👤 بيانات العميل:*",
-    `الاسم: ${customer.name}`,
-    `الموبايل: ${customer.phone}`,
-    customer.phone2 ? `موبايل احتياطي: ${customer.phone2}` : null,
-    `المحافظة: ${customer.gov}`,
-    `العنوان: ${customer.address}`,
-    customer.notes ? `ملاحظات: ${customer.notes}` : null,
+    `الاسم: ${c.name}`,
+    `الموبايل: ${c.phone}`,
+    c.phone2 ? `موبايل احتياطي: ${c.phone2}` : null,
+    `المحافظة: ${c.gov}`,
+    `العنوان: ${c.address}`,
+    c.notes ? `ملاحظات: ${c.notes}` : null,
     "",
     `📅 ${date}`,
   ]
@@ -258,38 +417,6 @@ function buildOrderMessage(customer) {
     .join("\n");
 }
 
-function sendOrderToWhatsApp(customer) {
-  const url = `https://wa.me/${STORE.whatsapp}?text=${encodeURIComponent(buildOrderMessage(customer))}`;
-  window.open(url, "_blank");
+function orderWhatsAppUrl(order) {
+  return `https://wa.me/${STORE.whatsapp}?text=${encodeURIComponent(buildOrderMessage(order))}`;
 }
-
-/* ---------- المحافظات ---------- */
-const GOVS = [
-  "القاهرة",
-  "الجيزة",
-  "الإسكندرية",
-  "القليوبية",
-  "المنوفية",
-  "الشرقية",
-  "الغربية",
-  "الدقهلية",
-  "البحيرة",
-  "كفر الشيخ",
-  "دمياط",
-  "بورسعيد",
-  "الإسماعيلية",
-  "السويس",
-  "شمال سيناء",
-  "جنوب سيناء",
-  "بني سويف",
-  "الفيوم",
-  "المنيا",
-  "أسيوط",
-  "سوهاج",
-  "قنا",
-  "الأقصر",
-  "أسوان",
-  "البحر الأحمر",
-  "الوادي الجديد",
-  "مطروح",
-];
