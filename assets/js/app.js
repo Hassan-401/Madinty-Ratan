@@ -6,13 +6,31 @@
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const money = (n) => Number(n).toLocaleString("en-US") + " ج.م";
+/* ============================================================
+   إصدار الصور
+   ------------------------------------------------------------
+   صور المشروع (assets/img) متخزنة في متصفح الزائر لمدة شهر عشان
+   السرعة. لو بدّلت صورة بنفس الاسم، الزائر هيفضل شايف القديمة
+   لحد ما الكاش يخلص — إلا لو غيّرنا الرابط.
+
+   ⚠️ كل ما تبدّل أي صورة في assets/img بنفس اسمها، زوّد الرقم ده
+   واحد وارفع. الصور المرفوعة من لوحة التحكم مش محتاجة كده لأن
+   Supabase بيدّي كل صورة اسم جديد.
+   ============================================================ */
+const ASSET_V = "2";
+
 /** ترميز مسار الصورة (الأسماء عربية وفيها مسافات) — يشتغل مع المسار الخام أو المرمّز */
 function imgURL(s) {
+  const raw = String(s || "");
+  let u;
   try {
-    return encodeURI(decodeURI(String(s || "")));
+    u = encodeURI(decodeURI(raw));
   } catch (e) {
-    return encodeURI(String(s || ""));
+    u = encodeURI(raw);
   }
+  /* الإصدار على صور المشروع بس — روابط Supabase أسماءها فريدة أصلًا */
+  if (/^\/?assets\/img\//.test(u)) u += (u.includes("?") ? "&" : "?") + "v=" + ASSET_V;
+  return u;
 }
 const esc = (s) =>
   String(s ?? "").replace(

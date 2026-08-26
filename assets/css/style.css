@@ -220,7 +220,7 @@ header.site.overlay.scrolled {
   color: #fff;
   overflow: hidden;
   padding: 0;
-  background: #141210 url("../img/hero.webp") center/cover no-repeat;
+  background: #141210 url("../img/hero.webp?v=2") center/cover no-repeat;
 }
 .hero::before {
   content: "";
@@ -339,7 +339,7 @@ header.site.overlay.scrolled {
   color: #fff;
   padding: 56px 0;
   text-align: center;
-  background: #141210 url("../img/hero.webp") center/cover no-repeat;
+  background: #141210 url("../img/hero.webp?v=2") center/cover no-repeat;
 }
 .page-head::before {
   content: "";

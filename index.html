@@ -85,7 +85,7 @@
         <div class="at-grid">
           <div class="at-img">
             <img
-              src="assets/img/home.webp"
+              src="assets/img/home.webp?v=2"
               alt="Madinty Ratan — أثاث خارجي بخامة تدوم"
               loading="lazy"
             />
@@ -134,7 +134,7 @@
     <a class="cat" href="products.html?cat=${c.id}">
       <div class="cat-img">
         <span class="ic">${c.icon}</span>
-        ${c.img ? `<img src="${c.img}" alt="${c.name}" loading="lazy"
+        ${c.img ? `<img src="${imgURL(c.img)}" alt="${esc(c.name)}" loading="lazy"
                         onerror="this.remove()">` : ""}
       </div>
       <div class="cat-body">
