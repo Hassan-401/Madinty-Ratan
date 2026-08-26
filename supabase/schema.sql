@@ -2,7 +2,7 @@
 -- Madinty Ratan — قاعدة بيانات Supabase
 -- ------------------------------------------------------------
 -- شغّل الملف ده مرة واحدة من: Supabase Dashboard ← SQL Editor
--- قبل ما تشغّله: غيّر الإيميل في سطر «إيميل صاحب المتجر» تحت.
+-- الإيميل المسموح له بالتعديل: hm2022004@gmail.com (سطر admins تحت).
 -- الملف ده آمن لو اتشغّل أكتر من مرة.
 -- ============================================================
 
@@ -20,8 +20,8 @@ create table if not exists public.admins (
   added_at timestamptz not null default now()
 );
 
--- 👇 غيّر الإيميل ده لإيميلك (نفس الإيميل اللي هتعمل بيه المستخدم في Authentication)
-insert into public.admins (email) values ('owner@example.com')
+-- إيميل صاحب المتجر — لازم يكون نفس الإيميل اللي هتعمل بيه المستخدم في Authentication
+insert into public.admins (email) values ('hm2022004@gmail.com')
 on conflict (email) do nothing;
 
 create or replace function public.is_admin()

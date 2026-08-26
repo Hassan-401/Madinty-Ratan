@@ -21,13 +21,11 @@
 
 1. من القايمة الجانبية: **SQL Editor** ← **New query**.
 2. افتح ملف `supabase/schema.sql` من المشروع ده وانسخه كله.
-3. **قبل ما تشغّله**، دوّر على السطر ده وغيّر الإيميل لإيميلك:
+3. **Run**. المفروض يخلص من غير أخطاء.
 
-   ```sql
-   insert into public.admins (email) values ('owner@example.com')
-   ```
-
-4. **Run**. المفروض يخلص من غير أخطاء.
+   الملف فيه إيميلك (`hm2022004@gmail.com`) في جدول `admins` — ده الإيميل
+   الوحيد اللي هيقدر يعدّل. لو عايز تضيف حد تاني بعدين، ضيفه من
+   **Table Editor ← admins**.
 
 > لو ظهرت أخطاء في آخر جزء (`storage.objects`)، ده معناه إن المشروع مقفّل
 > صلاحيات الـStorage من SQL. اعمل الـbucket يدوي: **Storage ← New bucket ←
