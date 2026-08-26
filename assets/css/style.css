@@ -1483,3 +1483,38 @@ a.c-card:hover {
   font-size: 12.5px;
   color: var(--ink-3);
 }
+
+/* ---------- روابط السوشيال في الفوتر ---------- */
+footer.site .social {
+  display: flex;
+  gap: 10px;
+  margin-top: 14px;
+}
+footer.site .social a {
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  transition: 0.16s;
+}
+footer.site .social a svg {
+  width: 19px;
+  height: 19px;
+}
+footer.site .social a:hover {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: #fff;
+  transform: translateY(-2px);
+}
+
+/* لون الشلت مطلوب — تنبيه لو العميل مختارش */
+.swatches.missing {
+  border: 1.5px dashed var(--terra);
+  border-radius: 11px;
+  padding: 9px;
+  background: rgba(157, 86, 54, 0.05);
+}

@@ -245,6 +245,8 @@ const ICONS = {
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 5h12v11H1z"/><path d="M13 8h4.5l3.5 3.5V16h-8"/><circle cx="6" cy="18.5" r="1.9"/><circle cx="17" cy="18.5" r="1.9"/></svg>',
   medal:
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="9.5" r="6"/><path d="m9 8.8 2 2 4-4"/><path d="m8.5 15-1.7 6L12 18.6 17.2 21l-1.7-6"/></svg>',
+  facebook:
+    '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M22 12.06C22 6.5 17.52 2 12 2S2 6.5 2 12.06c0 5 3.66 9.15 8.44 9.94v-7.03H7.9v-2.9h2.54V9.85c0-2.52 1.5-3.91 3.77-3.91 1.09 0 2.23.2 2.23.2v2.46h-1.26c-1.24 0-1.63.78-1.63 1.57v1.89h2.78l-.45 2.9h-2.33V22c4.78-.79 8.45-4.93 8.45-9.94z"/></svg>',
   shield:
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.5 4.5 5.6v6c0 4.6 3.1 8.5 7.5 9.9 4.4-1.4 7.5-5.3 7.5-9.9v-6L12 2.5Z"/><path d="m8.8 11.8 2.4 2.4 4-4.4"/></svg>',
 };
@@ -331,6 +333,10 @@ function renderFooter() {
           <li>✉️ <a href="mailto:${STORE.email}" dir="ltr">${STORE.email}</a></li>
           <li>📍 المصنع: ${STORE.factory}</li>
         </ul>
+        <div class="social">
+          <a href="${STORE.facebook}" target="_blank" rel="noopener" aria-label="صفحتنا على فيسبوك" title="فيسبوك">${ICONS.facebook}</a>
+          <a href="https://wa.me/${STORE.whatsapp}" target="_blank" rel="noopener" aria-label="واتساب" title="واتساب">${ICONS.whats}</a>
+        </div>
       </div>
     </div>
     <div class="wrap copy">© ${new Date().getFullYear()} Madinty Ratan — جميع الحقوق محفوظة</div>
@@ -343,7 +349,9 @@ function renderFooter() {
 /* ---------- كارت المنتج ---------- */
 function productCard(p) {
   const off = p.oldPrice ? Math.round((1 - p.price / p.oldPrice) * 100) : 0;
-  const pick = p.variants && p.variants.length; /* لازم يختار نوع الأول */
+  const hasVariants = !!(p.variants && p.variants.length);
+  /* لازم يفتح صفحة المنتج عشان يختار النوع أو لون الشلت */
+  const pickLabel = hasVariants ? "اختر النوع" : p.cushions ? "اختر اللون" : "";
   return `
   <article class="card">
     <a class="thumb" href="product.html?id=${encodeURIComponent(p.id)}">
@@ -354,11 +362,11 @@ function productCard(p) {
       <span class="cat-tag">${esc(catName(p.cat))}</span>
       <h3><a href="product.html?id=${encodeURIComponent(p.id)}">${esc(p.name)}</a></h3>
       <p class="short">${esc(p.short)}</p>
-      <div class="price">${pick ? "يبدأ من " : ""}${money(p.price)}${p.oldPrice ? `<span class="old">${money(p.oldPrice)}</span>` : ""}</div>
+      <div class="price">${hasVariants ? "يبدأ من " : ""}${money(p.price)}${p.oldPrice ? `<span class="old">${money(p.oldPrice)}</span>` : ""}</div>
       <div class="actions">
         ${
-          pick
-            ? `<a class="btn btn-dark" href="product.html?id=${encodeURIComponent(p.id)}">اختر النوع</a>`
+          pickLabel
+            ? `<a class="btn btn-dark" href="product.html?id=${encodeURIComponent(p.id)}">${pickLabel}</a>`
             : `<button class="btn btn-dark" onclick="addToCart('${esc(p.id)}')">أضف للعربة</button>`
         }
         <a class="btn btn-line" href="product.html?id=${encodeURIComponent(p.id)}">تفاصيل</a>

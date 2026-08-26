@@ -23,27 +23,19 @@ function hash(s) {
   for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) >>> 0;
   return h.toString(36);
 }
-function storedPass() {
-  return localStorage.getItem(AUTH_KEY) || hash(DEFAULT_PASS);
-}
-function isDefaultPass() {
-  return !localStorage.getItem(AUTH_KEY);
-}
-
-const loginScreen = $("#loginScreen");
-const app = $("#app");
+const storedPass = () => localStorage.getItem(AUTH_KEY) || hash(DEFAULT_PASS);
+const isDefaultPass = () => !localStorage.getItem(AUTH_KEY);
 
 function openApp() {
   sessionStorage.setItem("mr_admin_ok", "1");
-  loginScreen.classList.add("hidden");
-  app.classList.remove("hidden");
+  $("#loginScreen").classList.add("hidden");
+  $("#app").classList.remove("hidden");
   renderAll();
 }
 
 $("#loginForm").addEventListener("submit", (e) => {
   e.preventDefault();
-  const v = $("#pass").value;
-  if (hash(v) === storedPass()) openApp();
+  if (hash($("#pass").value) === storedPass()) openApp();
   else {
     toast("كلمة السر غلط");
     $("#pass").value = "";
@@ -59,22 +51,28 @@ $("#logout").addEventListener("click", () => {
 if (!isDefaultPass()) $("#passHint").classList.add("hidden");
 
 /* ============================================================
-   2) التبويبات
+   2) التنقّل
    ============================================================ */
 function showTab(name) {
-  $$("#tabs button").forEach((b) => b.classList.toggle("on", b.dataset.tab === name));
+  $$(".side .nav[data-tab]").forEach((b) =>
+    b.classList.toggle("on", b.dataset.tab === name),
+  );
   $$("section[data-panel]").forEach((s) =>
     s.classList.toggle("hidden", s.dataset.panel !== name),
   );
+  document.body.classList.remove("menu");
   window.scrollTo({ top: 0 });
 }
-$("#tabs").addEventListener("click", (e) => {
-  const b = e.target.closest("button[data-tab]");
-  if (b) showTab(b.dataset.tab);
-});
+
 document.addEventListener("click", (e) => {
-  const g = e.target.closest("[data-goto]");
-  if (g) showTab(g.dataset.goto);
+  const nav = e.target.closest(".side .nav[data-tab]");
+  if (nav) return showTab(nav.dataset.tab);
+
+  const go = e.target.closest("[data-goto]");
+  if (go) return showTab(go.dataset.goto);
+
+  if (e.target.closest("[data-menu]")) document.body.classList.toggle("menu");
+  if (e.target.id === "backdrop") document.body.classList.remove("menu");
 });
 
 /* ============================================================
@@ -84,21 +82,18 @@ const saveCatalog = () => writeDB({ categories: CATEGORIES, products: PRODUCTS }
 
 const fmtDate = (iso) =>
   new Date(iso).toLocaleString("ar-EG-u-nu-latn", {
-    dateStyle: "short",
+    dateStyle: "medium",
     timeStyle: "short",
   });
 
 const lines = (t) =>
-  String(t || "")
-    .split("\n")
-    .map((s) => s.trim())
-    .filter(Boolean);
+  String(t || "").split("\n").map((s) => s.trim()).filter(Boolean);
 
 const commas = (t) =>
-  String(t || "")
-    .split(/[،,]/)
-    .map((s) => s.trim())
-    .filter(Boolean);
+  String(t || "").split(/[،,]/).map((s) => s.trim()).filter(Boolean);
+
+/** الحد اللي تحته يعتبر المخزون منخفض */
+const LOW_STOCK = 5;
 
 function download(name, text, type = "application/json") {
   const url = URL.createObjectURL(new Blob([text], { type: type + ";charset=utf-8" }));
@@ -109,77 +104,127 @@ function download(name, text, type = "application/json") {
   setTimeout(() => URL.revokeObjectURL(url), 2000);
 }
 
-function modal(title, html) {
+function modal(title, html, wide = false) {
   $("#modalHost").innerHTML = `
     <div class="modal">
-      <div class="box">
-        <header><h3>${title}</h3><button class="x" data-close>&times;</button></header>
+      <div class="box"${wide ? "" : ' style="max-width:640px"'}>
+        <header><h3>${title}</h3><button class="x" data-close type="button">&times;</button></header>
         <div class="content">${html}</div>
       </div>
     </div>`;
-  return $("#modalHost");
 }
+const closeModal = () => ($("#modalHost").innerHTML = "");
+
 $("#modalHost").addEventListener("click", (e) => {
   if (e.target.closest("[data-close]") || e.target.classList.contains("modal"))
     closeModal();
 });
-const closeModal = () => ($("#modalHost").innerHTML = "");
 
 /* كل مسارات الصور المعروفة — تظهر كاقتراحات في خانات الصور */
 function refreshImgList() {
   const paths = [
-    ...new Set([
-      ...PRODUCTS.map((p) => p.img),
-      ...CATEGORIES.map((c) => c.img),
-    ]),
+    ...new Set([...PRODUCTS.map((p) => p.img), ...CATEGORIES.map((c) => c.img)]),
   ].filter(Boolean);
   $("#imgList").innerHTML = paths.map((p) => `<option value="${esc(p)}">`).join("");
 }
+
+/** شارة المخزون — المخزون اختياري، لو مش متحدد بتظهر شرطة */
+function stockPill(p) {
+  if (p.stock == null || p.stock === "") return `<span class="pill none">—</span>`;
+  const n = Number(p.stock);
+  const k = n === 0 ? "low" : n <= LOW_STOCK ? "mid" : "";
+  return `<span class="pill ${k}">${n}</span>`;
+}
+
+/** عدد القطع المباعة لكل منتج (بالاسم — الطلبات الملصوقة مالهاش كود) */
+function soldMap() {
+  const m = new Map();
+  for (const o of getOrders()) {
+    if (o.status === "ملغي") continue;
+    for (const it of o.items) {
+      const key = it.id || it.name;
+      m.set(key, (m.get(key) || 0) + it.qty);
+    }
+  }
+  return m;
+}
+const soldOf = (p, m) => (m.get(p.id) || 0) + (m.get(p.name) || 0);
 
 /* ============================================================
    4) نظرة عامة
    ============================================================ */
 function renderHome() {
   const orders = getOrders();
-  const open = orders.filter((o) => !["تم التسليم", "ملغي"].includes(o.status));
-  const done = orders.filter((o) => o.status === "تم التسليم");
-  const revenue = done.reduce((s, o) => s + o.total, 0);
+  const live = orders.filter((o) => o.status !== "ملغي");
+  const pending = orders.filter((o) => o.status === "جديد").length;
+  const revenue = live.reduce((s, o) => s + o.total, 0);
+  const pieces = live.reduce((s, o) => s + o.items.reduce((x, i) => x + i.qty, 0), 0);
 
   $("#homeStats").innerHTML = [
-    ["إجمالي الطلبات", orders.length, ""],
-    ["طلبات مفتوحة", open.length, "terra"],
-    ["تم تسليمها", done.length, "forest"],
-    ["إيراد المُسلَّم", money(revenue), "gold"],
-    ["عدد المنتجات", PRODUCTS.length, ""],
-    ["عدد الأقسام", CATEGORIES.length, ""],
+    ["gold", "💰", money(revenue), "إجمالي المبيعات"],
+    ["blue", "🧾", orders.length, `عدد الطلبات${pending ? ` (${pending} قيد المراجعة)` : ""}`],
+    ["forest", "📦", PRODUCTS.length, "عدد المنتجات"],
+    ["terra", "🛍️", pieces, "قطعة مباعة"],
   ]
-    .map(([t, v, k]) => `<div class="stat ${k}"><b>${v}</b><span>${t}</span></div>`)
+    .map(
+      ([k, ic, v, t]) => `
+      <div class="stat ${k}">
+        <div class="txt"><b>${v}</b><span>${t}</span></div>
+        <div class="ic">${ic}</div>
+      </div>`,
+    )
     .join("");
 
-  const n = orders.filter((o) => o.status === "جديد").length;
-  $("#newPill").textContent = n;
-  $("#newPill").classList.toggle("hidden", !n);
+  $("#navOrders").textContent = pending;
+  $("#navOrders").classList.toggle("hidden", !pending);
+  $("#navProducts").textContent = PRODUCTS.length;
+  $("#navCats").textContent = CATEGORIES.length;
 
   $("#homeOrders").innerHTML = orders.length
-    ? ordersTableHTML(orders.slice(0, 6), false)
+    ? ordersTableHTML(orders.slice(0, 5))
     : `<p class="empty-row">مفيش طلبات لسه.</p>`;
 
-  $("#homeCats").innerHTML = `
-    <table>
-      <thead><tr><th>القسم</th><th>عدد المنتجات</th><th>أقل سعر</th><th>أعلى سعر</th></tr></thead>
-      <tbody>
-        ${CATEGORIES.map((c) => {
-          const list = PRODUCTS.filter((p) => p.cat === c.id);
-          const prices = list.map((p) => p.price).filter((x) => x != null);
-          return `<tr>
-            <td>${esc(c.icon || "")} ${esc(c.name)}</td>
-            <td>${list.length}</td>
-            <td>${prices.length ? money(Math.min(...prices)) : "—"}</td>
-            <td>${prices.length ? money(Math.max(...prices)) : "—"}</td>
-          </tr>`;
-        }).join("")}
-      </tbody>
-    </table>`;
+  /* --- الأكثر مبيعًا --- */
+  const m = soldMap();
+  const top = PRODUCTS.map((p) => ({ p, n: soldOf(p, m) }))
+    .filter((x) => x.n > 0)
+    .sort((a, b) => b.n - a.n)
+    .slice(0, 5);
+
+  $("#topSellers").innerHTML = top.length
+    ? top
+        .map(
+          ({ p, n }) => `
+      <div class="rank">
+        <img src="${imgURL(p.img)}" alt="" loading="lazy">
+        <b>${esc(p.name)}</b>
+        <span>${n} قطعة</span>
+      </div>`,
+        )
+        .join("")
+    : `<div class="empty-state"><div class="ic">📊</div>لسه مفيش مبيعات مسجّلة.</div>`;
+
+  /* --- مخزون منخفض --- */
+  const tracked = PRODUCTS.filter((p) => p.stock != null && p.stock !== "");
+  const low = tracked
+    .filter((p) => Number(p.stock) <= LOW_STOCK)
+    .sort((a, b) => a.stock - b.stock);
+
+  $("#lowStock").innerHTML = !tracked.length
+    ? `<div class="empty-state"><div class="ic">🗃️</div>
+         حدّد المخزون للمنتجات من صفحة المنتجات عشان تتابعه من هنا.</div>`
+    : low.length
+      ? low
+          .map(
+            (p) => `
+        <div class="rank">
+          <img src="${imgURL(p.img)}" alt="" loading="lazy">
+          <b>${esc(p.name)}</b>
+          ${stockPill(p)}
+        </div>`,
+          )
+          .join("")
+      : `<div class="empty-state"><div class="ic">✅</div>كل المنتجات بمخزون كويس.</div>`;
 }
 
 /* ============================================================
@@ -201,13 +246,16 @@ function filteredOrders() {
   });
 }
 
-function ordersTableHTML(list, withActions = true) {
+const waLink = (phone) =>
+  "https://wa.me/2" + String(phone || "").replace(/\D/g, "").replace(/^0/, "");
+
+function ordersTableHTML(list) {
   return `
   <table>
     <thead>
       <tr>
-        <th>رقم الطلب</th><th>التاريخ</th><th>العميل</th><th>الموبايل</th>
-        <th>المحافظة</th><th>الإجمالي</th><th>الحالة</th>${withActions ? "<th></th>" : ""}
+        <th>رقم الطلب</th><th>العميل</th><th>التاريخ</th>
+        <th>الإجمالي</th><th>الحالة</th><th></th>
       </tr>
     </thead>
     <tbody>
@@ -215,12 +263,13 @@ function ordersTableHTML(list, withActions = true) {
         .map(
           (o) => `
       <tr>
-        <td class="mono">${esc(o.no)}</td>
-        <td>${fmtDate(o.at)}</td>
-        <td>${esc(o.customer.name)}</td>
-        <td class="mono" dir="ltr">${esc(o.customer.phone)}</td>
-        <td>${esc(o.customer.gov)}</td>
-        <td><b>${money(o.total)}</b>${o.shipping === null ? " +شحن" : ""}</td>
+        <td class="mono ono">${esc(o.no)}</td>
+        <td>
+          <b>${esc(o.customer.name)}</b>
+          <div class="muted mono" dir="ltr" style="text-align:start">${esc(o.customer.phone)}</div>
+        </td>
+        <td class="muted">${fmtDate(o.at)}</td>
+        <td><b>${money(o.total)}</b>${o.shipping === null ? '<div class="muted">+ الشحن</div>' : ""}</td>
         <td>
           <select class="status" data-s="${esc(o.status)}" data-no="${esc(o.no)}">
             ${ORDER_STATUSES.map(
@@ -228,16 +277,11 @@ function ordersTableHTML(list, withActions = true) {
             ).join("")}
           </select>
         </td>
-        ${
-          withActions
-            ? `<td class="actions">
-          <button class="btn line sm" data-detail="${esc(o.no)}">تفاصيل</button>
-          <a class="btn line sm" href="https://wa.me/2${esc(String(o.customer.phone).replace(/^0/, ""))}"
-             target="_blank" rel="noopener">واتساب</a>
-          <button class="btn danger sm" data-del-order="${esc(o.no)}">حذف</button>
-        </td>`
-            : ""
-        }
+        <td class="actions">
+          <button class="ibtn" data-detail="${esc(o.no)}" title="تفاصيل">👁</button>
+          <a class="ibtn" href="${waLink(o.customer.phone)}" target="_blank" rel="noopener" title="واتساب">💬</a>
+          <button class="ibtn del" data-del-order="${esc(o.no)}" title="حذف">🗑</button>
+        </td>
       </tr>`,
         )
         .join("")}
@@ -247,23 +291,31 @@ function ordersTableHTML(list, withActions = true) {
 
 function renderOrders() {
   const all = getOrders();
-  const sum = (f) => all.filter(f).length;
+  const n = (s) => all.filter((o) => o.status === s).length;
 
   $("#orderStats").innerHTML = [
-    ["كل الطلبات", all.length, ""],
-    ["جديد", sum((o) => o.status === "جديد"), "terra"],
-    ["قيد التجهيز", sum((o) => o.status === "قيد التجهيز"), ""],
-    ["تم الشحن", sum((o) => o.status === "تم الشحن"), ""],
-    ["تم التسليم", sum((o) => o.status === "تم التسليم"), "forest"],
-    ["ملغي", sum((o) => o.status === "ملغي"), ""],
+    ["blue", "🧾", all.length, "كل الطلبات"],
+    ["terra", "🆕", n("جديد"), "جديد"],
+    ["gold", "🛠️", n("قيد التجهيز") + n("تم التأكيد"), "قيد التجهيز"],
+    ["forest", "✅", n("تم التسليم"), "تم التسليم"],
   ]
-    .map(([t, v, k]) => `<div class="stat ${k}"><b>${v}</b><span>${t}</span></div>`)
+    .map(
+      ([k, ic, v, t]) => `
+      <div class="stat ${k}">
+        <div class="txt"><b>${v}</b><span>${t}</span></div>
+        <div class="ic">${ic}</div>
+      </div>`,
+    )
     .join("");
 
   const list = filteredOrders();
   $("#ordersTable").innerHTML = list.length
     ? ordersTableHTML(list)
-    : `<p class="empty-row">${all.length ? "مفيش طلبات مطابقة للبحث." : "مفيش طلبات لسه — استخدم «لصق رسالة واتساب» عشان تضيف طلب."}</p>`;
+    : `<p class="empty-row">${
+        all.length
+          ? "مفيش طلبات مطابقة للبحث."
+          : "مفيش طلبات لسه — استخدم «لصق رسالة واتساب» عشان تضيف طلب."
+      }</p>`;
 }
 
 $("#oSearch").addEventListener("input", renderOrders);
@@ -309,19 +361,19 @@ function showOrder(no) {
       <dt>التاريخ</dt><dd>${fmtDate(o.at)}</dd>
       <dt>الحالة</dt><dd>${esc(o.status)}</dd>
       <dt>الاسم</dt><dd>${esc(c.name)}</dd>
-      <dt>الموبايل</dt><dd class="mono" dir="ltr">${esc(c.phone)}${c.phone2 ? " / " + esc(c.phone2) : ""}</dd>
+      <dt>الموبايل</dt><dd class="mono" dir="ltr" style="text-align:start">${esc(c.phone)}${c.phone2 ? " / " + esc(c.phone2) : ""}</dd>
       <dt>المحافظة</dt><dd>${esc(c.gov)}</dd>
       <dt>العنوان</dt><dd>${esc(c.address)}</dd>
       ${c.notes ? `<dt>ملاحظات</dt><dd>${esc(c.notes)}</dd>` : ""}
     </dl>
     <div class="tablebox">
-      <table style="min-width:auto">
+      <table>
         <thead><tr><th>المنتج</th><th>الكمية</th><th>السعر</th><th>الإجمالي</th></tr></thead>
         <tbody>
           ${o.items
             .map(
               (i) => `<tr>
-            <td>${esc(i.name)}
+            <td><b>${esc(i.name)}</b>
               ${i.variant ? `<div class="muted">النوع: ${esc(i.variant)}</div>` : ""}
               ${i.color ? `<div class="muted">لون الشلت: ${esc(i.color)}</div>` : ""}
             </td>
@@ -333,16 +385,19 @@ function showOrder(no) {
         <tfoot>
           <tr><td colspan="3">الإجمالي الفرعي</td><td>${money(o.subtotal)}</td></tr>
           <tr><td colspan="3">الشحن</td><td>${
-            o.shipping === null ? "يُحدد عند التأكيد" : o.shipping === 0 ? "مجانًا" : money(o.shipping)
+            o.shipping === null
+              ? "يُحدد عند التأكيد"
+              : o.shipping === 0
+                ? "مجانًا"
+                : money(o.shipping)
           }</td></tr>
           <tr><td colspan="3"><b>الإجمالي</b></td><td><b>${money(o.total)}</b></td></tr>
         </tfoot>
       </table>
     </div>
     <div class="form-actions">
-      <a class="btn" href="https://wa.me/2${esc(String(c.phone).replace(/^0/, ""))}"
-         target="_blank" rel="noopener">💬 كلّم العميل</a>
-      <button class="btn line" data-close>إغلاق</button>
+      <a class="btn" href="${waLink(c.phone)}" target="_blank" rel="noopener">💬 كلّم العميل</a>
+      <button class="btn line" data-close type="button">إغلاق</button>
     </div>`,
   );
 }
@@ -360,7 +415,12 @@ $("#exportCsv").addEventListener("click", () => {
       o.customer.phone2 || "",
       o.customer.gov,
       o.customer.address,
-      o.items.map((i) => `${i.name} ×${i.qty}`).join(" / "),
+      o.items
+        .map(
+          (i) =>
+            `${i.name}${i.variant ? ` (${i.variant})` : ""}${i.color ? ` [${i.color}]` : ""} ×${i.qty}`,
+        )
+        .join(" / "),
       o.subtotal,
       o.shipping === null ? "يُحدد لاحقًا" : o.shipping,
       o.total,
@@ -379,11 +439,11 @@ $("#exportCsv").addEventListener("click", () => {
 $("#pasteOrder").addEventListener("click", () => {
   modal(
     "إضافة طلب من رسالة واتساب",
-    `<p class="muted">الصق رسالة الطلب اللي وصلتك على الواتساب زي ما هي، واللوحة هتقراها وتضيف الطلب.</p>
-     <div class="f"><textarea id="waText" style="min-height:220px" class="mono"></textarea></div>
+    `<p class="muted" style="margin-top:0">الصق رسالة الطلب اللي وصلتك على الواتساب زي ما هي، واللوحة هتقراها وتضيف الطلب.</p>
+     <div class="f"><textarea id="waText" style="min-height:230px" class="mono"></textarea></div>
      <div class="form-actions">
-       <button class="btn gold" id="waParse">تحليل وإضافة</button>
-       <button class="btn line" data-close>إلغاء</button>
+       <button class="btn gold" id="waParse" type="button">تحليل وإضافة</button>
+       <button class="btn line" data-close type="button">إلغاء</button>
      </div>`,
   );
   $("#waParse").addEventListener("click", () => {
@@ -411,37 +471,28 @@ function parseWhatsAppOrder(text) {
 
   /* المنتجات: "1) الاسم" + سطر اختياري للنوع/اللون + سطر الكمية */
   const items = [];
-  const blocks = t.split(/\n(?=\d+\)\s)/);
-  for (const b of blocks) {
+  for (const b of t.split(/\n(?=\d+\)\s)/)) {
     const m = b.match(/^(\d+)\)\s*(.+)/);
     if (!m) continue;
     const qm = b.match(/الكمية:\s*(\d+)\s*[×x]\s*([\d.,]+)/);
     if (!qm) continue;
+    const pick = (re) => (b.match(re) || [])[1]?.trim() || "";
     items.push({
       id: "",
       name: m[2].trim(),
       qty: Number(qm[1]),
       price: num(qm[2]),
-      variant: grab.call(null, /النوع:\s*([^\n—]+)/) && b.match(/النوع:\s*([^\n—]+)/)
-        ? b.match(/النوع:\s*([^\n—]+)/)[1].trim()
-        : "",
-      color: b.match(/لون الشلت:\s*([^\n]+)/)
-        ? b.match(/لون الشلت:\s*([^\n]+)/)[1].trim()
-        : "",
+      variant: pick(/النوع:\s*([^\n—]+)/),
+      color: pick(/لون الشلت:\s*([^\n]+)/),
     });
   }
   if (!items.length) return null;
 
-  const gov = grab(/^المحافظة:\s*(.+)$/m);
   const subtotal =
     num(grab(/الإجمالي الفرعي:\s*(.+)/)) ||
     items.reduce((s, i) => s + i.price * i.qty, 0);
   const shipRaw = grab(/^الشحن\s*\(?[^)]*\)?:\s*(.+)$/m);
-  const shipping = /يُحدد|يحدد/.test(shipRaw)
-    ? null
-    : /مجان/.test(shipRaw)
-      ? 0
-      : num(shipRaw);
+  const shipping = /يُحدد|يحدد/.test(shipRaw) ? null : /مجان/.test(shipRaw) ? 0 : num(shipRaw);
 
   return {
     no: grab(/رقم الطلب:\s*(\S+)/) || "MR-" + Date.now().toString().slice(-6),
@@ -451,7 +502,7 @@ function parseWhatsAppOrder(text) {
       name,
       phone,
       phone2: grab(/^موبايل احتياطي:\s*(.+)$/m),
-      gov,
+      gov: grab(/^المحافظة:\s*(.+)$/m),
       address: grab(/^العنوان:\s*(.+)$/m),
       notes: grab(/^ملاحظات:\s*(.+)$/m),
     },
@@ -465,15 +516,10 @@ function parseWhatsAppOrder(text) {
 /* ============================================================
    6) المنتجات
    ============================================================ */
-let editingProduct = null;
-
 function fillCatSelects() {
-  const opts = CATEGORIES.map(
-    (c) => `<option value="${esc(c.id)}">${esc(c.name)}</option>`,
-  ).join("");
-  $("#pCat").innerHTML = opts;
   $("#pFilterCat").innerHTML =
-    `<option value="">كل الأقسام</option>` + opts;
+    `<option value="">كل الأقسام</option>` +
+    CATEGORIES.map((c) => `<option value="${esc(c.id)}">${esc(c.name)}</option>`).join("");
 }
 
 function renderProducts() {
@@ -482,33 +528,43 @@ function renderProducts() {
   const list = PRODUCTS.filter(
     (p) =>
       (!cat || p.cat === cat) &&
-      (!q ||
-        p.name.toLowerCase().includes(q) ||
-        String(p.id).toLowerCase().includes(q)),
+      (!q || p.name.toLowerCase().includes(q) || String(p.id).toLowerCase().includes(q)),
   );
 
-  $("#pCount").textContent = `${PRODUCTS.length} منتج`;
   $("#productsTable").innerHTML = list.length
     ? `<table>
-        <thead><tr><th></th><th>الكود</th><th>الاسم</th><th>القسم</th><th>السعر</th><th>مميز</th><th></th></tr></thead>
+        <thead><tr>
+          <th>المنتج</th><th>القسم</th><th>السعر</th><th>المخزون</th><th>رواج</th><th>إجراءات</th>
+        </tr></thead>
         <tbody>
           ${list
-            .map(
-              (p) => `<tr>
-            <td><img class="thumb-sm" src="${imgURL(p.img)}" alt="" loading="lazy"></td>
-            <td class="mono">${esc(p.id)}</td>
-            <td>${esc(p.name)}${p.variants?.length ? `<div class="muted">${p.variants.length} أنواع</div>` : ""}</td>
-            <td>${esc(catName(p.cat))}</td>
-            <td><b>${p.price != null ? money(p.price) : "—"}</b>${
-              p.oldPrice ? `<div class="muted"><s>${money(p.oldPrice)}</s></div>` : ""
-            }</td>
-            <td>${p.featured ? "⭐" : ""}</td>
-            <td class="actions">
-              <button class="btn line sm" data-edit-p="${esc(p.id)}">تعديل</button>
-              <button class="btn danger sm" data-del-p="${esc(p.id)}">حذف</button>
+            .map((p) => {
+              const cat = CATEGORIES.find((c) => c.id === p.cat);
+              const off = p.oldPrice ? Math.round((1 - p.price / p.oldPrice) * 100) : 0;
+              return `<tr>
+            <td>
+              <div class="cell-prod">
+                <img src="${imgURL(p.img)}" alt="" loading="lazy">
+                <div>
+                  <b>${esc(p.name)}</b>
+                  <span>${esc(p.short || "")}</span>
+                </div>
+              </div>
             </td>
-          </tr>`,
-            )
+            <td><span class="chip">${esc(cat?.icon || "")} ${esc(catName(p.cat) || "—")}</span></td>
+            <td>
+              <div class="price-now">${p.price != null ? money(p.price) : "—"}</div>
+              ${p.oldPrice ? `<div class="price-old"><s>${money(p.oldPrice)}</s>${off ? ` −${off}%` : ""}</div>` : ""}
+            </td>
+            <td>${stockPill(p)}</td>
+            <td>${p.featured ? "⭐" : "–"}</td>
+            <td class="actions">
+              <a class="ibtn" href="product.html?id=${encodeURIComponent(p.id)}" target="_blank" rel="noopener" title="عرض">👁</a>
+              <button class="ibtn" data-edit-p="${esc(p.id)}" title="تعديل">✏️</button>
+              <button class="ibtn del" data-del-p="${esc(p.id)}" title="حذف">🗑</button>
+            </td>
+          </tr>`;
+            })
             .join("")}
         </tbody>
       </table>`
@@ -517,42 +573,175 @@ function renderProducts() {
 
 $("#pSearch").addEventListener("input", renderProducts);
 $("#pFilterCat").addEventListener("change", renderProducts);
-$("#pImg").addEventListener("input", paintPreview);
+$("#addProduct").addEventListener("click", () => productModal(null));
 
-function paintPreview() {
-  const v = $("#pImg").value.trim();
-  $("#pPreview").innerHTML = v
-    ? `<img src="${imgURL(v)}" alt="" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'none',textContent:'الصورة مش موجودة على المسار ده'}))">`
-    : `<span class="none">لا توجد صورة</span>`;
-}
+document.addEventListener("click", (e) => {
+  const ed = e.target.closest("[data-edit-p]");
+  if (ed) return productModal(PRODUCTS.find((x) => x.id === ed.dataset.editP) || null);
 
-/* ---------- تحويل النموذج <-> المنتج ---------- */
-function productToForm(p) {
-  $("#pId").value = p?.id || "";
-  $("#pCat").value = p?.cat || CATEGORIES[0]?.id || "";
-  $("#pName").value = p?.name || "";
-  $("#pShort").value = p?.short || "";
-  $("#pPrice").value = p?.price ?? "";
-  $("#pOld").value = p?.oldPrice ?? "";
-  $("#pImg").value = p?.img || "";
-  $("#pFeatured").checked = !!p?.featured;
-  $("#pCushions").checked = !!p?.cushions;
-  $("#pComponents").value = (p?.components || []).join("\n");
-  $("#pSpecs").value = (p?.specs || []).join("\n");
-  $("#pVariants").value = (p?.variants || [])
-    .map((v) =>
-      [v.name, v.price ?? "", v.oldPrice ?? "", (v.components || []).join(" + ")].join(" | "),
-    )
-    .join("\n");
-  $("#pDims").value = (p?.dims || []).map((d) => `${d.label}: ${d.value}`).join("\n");
-  $("#pFrame").value = (p?.frameColors || []).join("، ");
-  $("#pWeave").value = (p?.weaveColors || []).join("، ");
-  $("#pWarranty").value = p?.warranty || "";
-  $("#pLoad").value = p?.loadCapacity || "";
-  $("#pNote").value = p?.colorsNote || "";
-  $("#pFormTitle").textContent = p ? "✏️ تعديل: " + p.name : "➕ إضافة منتج جديد";
-  $("#pSave").textContent = p ? "حفظ التعديلات" : "حفظ المنتج";
-  paintPreview();
+  const del = e.target.closest("[data-del-p]");
+  if (del) {
+    const p = PRODUCTS.find((x) => x.id === del.dataset.delP);
+    if (!p || !confirm(`تأكيد حذف «${p.name}»؟`)) return;
+    PRODUCTS.splice(PRODUCTS.indexOf(p), 1);
+    saveCatalog();
+    toast("تم حذف المنتج");
+    renderAll();
+  }
+});
+
+/** نافذة إضافة/تعديل منتج */
+function productModal(p) {
+  const editingId = p?.id || null;
+  modal(
+    p ? "✏️ تعديل: " + esc(p.name) : "＋ إضافة منتج جديد",
+    `
+    <form id="pForm">
+      <div class="form-grid">
+        <div class="f">
+          <label for="pId">كود المنتج (SKU) <small>لا يتكرر</small></label>
+          <input id="pId" class="mono" placeholder="MR-IRON-09" value="${esc(p?.id || "")}">
+        </div>
+        <div class="f">
+          <label for="pCat">القسم</label>
+          <select id="pCat">
+            ${CATEGORIES.map(
+              (c) =>
+                `<option value="${esc(c.id)}" ${c.id === p?.cat ? "selected" : ""}>${esc(c.name)}</option>`,
+            ).join("")}
+          </select>
+        </div>
+        <div class="f">
+          <label for="pName">اسم المنتج</label>
+          <input id="pName" placeholder="طقم حديد علب 4 × 8" value="${esc(p?.name || "")}">
+        </div>
+        <div class="f">
+          <label for="pShort">وصف مختصر</label>
+          <input id="pShort" placeholder="كنبة 3 مقعد + 2 كرسي + ترابيزة" value="${esc(p?.short || "")}">
+        </div>
+        <div class="f">
+          <label for="pPrice">السعر (ج.م)</label>
+          <input id="pPrice" type="number" min="0" step="50" value="${p?.price ?? ""}">
+        </div>
+        <div class="f">
+          <label for="pOld">السعر قبل الخصم <small>اختياري</small></label>
+          <input id="pOld" type="number" min="0" step="50" value="${p?.oldPrice ?? ""}">
+        </div>
+        <div class="f">
+          <label for="pStock">المخزون <small>سِبها فاضية لو مش بتتابعه</small></label>
+          <input id="pStock" type="number" min="0" step="1" value="${p?.stock ?? ""}">
+        </div>
+        <div class="f">
+          <label>خيارات</label>
+          <label class="check"><input type="checkbox" id="pFeatured" ${p?.featured ? "checked" : ""}>
+            رواج (يظهر في «الأكثر طلبًا»)</label>
+          <label class="check"><input type="checkbox" id="pCushions" ${p?.cushions ? "checked" : ""}>
+            اختيار لون الشلت <b class="mono">إجباري</b> للعميل</label>
+        </div>
+        <div class="f wide">
+          <label for="pImg">مسار الصورة</label>
+          <input id="pImg" class="mono" list="imgList" value="${esc(p?.img || "")}"
+            placeholder="assets/img/products/رتان/رتان 1.webp">
+        </div>
+        <div class="f wide">
+          <label>معاينة الصورة</label>
+          <div class="preview" id="pPreview"></div>
+        </div>
+        <div class="f wide">
+          <label for="pComponents">مكونات الطقم <small>مكوّن في كل سطر</small></label>
+          <textarea id="pComponents" placeholder="كنبة 3 مقعد&#10;2 كرسي&#10;ترابيزة">${esc((p?.components || []).join("\n"))}</textarea>
+        </div>
+        <div class="f wide">
+          <label for="pSpecs">المواصفات <small>مواصفة في كل سطر</small></label>
+          <textarea id="pSpecs" placeholder="حديد علب معالج&#10;دهان فرن إلكتروستاتك">${esc((p?.specs || []).join("\n"))}</textarea>
+        </div>
+        <div class="f wide">
+          <label for="pVariants">أنواع الطقم
+            <small>سطر لكل نوع: الاسم | السعر | السعر القديم | مكون + مكون</small></label>
+          <textarea id="pVariants" class="mono" placeholder="طقم 4 كراسي + ترابيزة | 5500 |  | 4 كراسي + ترابيزة">${esc(
+            (p?.variants || [])
+              .map((v) =>
+                [v.name, v.price ?? "", v.oldPrice ?? "", (v.components || []).join(" + ")].join(" | "),
+              )
+              .join("\n"),
+          )}</textarea>
+        </div>
+        <div class="f wide">
+          <label for="pDims">المقاسات <small>سطر لكل مقاس: التسمية: القيمة</small></label>
+          <textarea id="pDims" placeholder="الترابيزة: 2 متر × 70 سم">${esc((p?.dims || []).map((d) => `${d.label}: ${d.value}`).join("\n"))}</textarea>
+        </div>
+        <div class="f">
+          <label for="pFrame">ألوان الحديد <small>مفصولة بفاصلة</small></label>
+          <input id="pFrame" placeholder="أبيض، أسود، جولد" value="${esc((p?.frameColors || []).join("، "))}">
+        </div>
+        <div class="f">
+          <label for="pWeave">ألوان الجدل <small>مفصولة بفاصلة</small></label>
+          <input id="pWeave" placeholder="بيچ فاتح، بني غامق" value="${esc((p?.weaveColors || []).join("، "))}">
+        </div>
+        <div class="f">
+          <label for="pWarranty">الضمان</label>
+          <input id="pWarranty" placeholder="ضمان جودة 100%" value="${esc(p?.warranty || "")}">
+        </div>
+        <div class="f">
+          <label for="pLoad">الحمولة</label>
+          <input id="pLoad" placeholder="تتحمل حتى 500 كيلو" value="${esc(p?.loadCapacity || "")}">
+        </div>
+        <div class="f wide">
+          <label for="pNote">ملاحظة على الألوان</label>
+          <input id="pNote" placeholder="متاح تغيير أي لون" value="${esc(p?.colorsNote || "")}">
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="btn gold" type="submit">${p ? "حفظ التعديلات" : "حفظ المنتج"}</button>
+        <button class="btn line" data-close type="button">إلغاء</button>
+      </div>
+    </form>`,
+    true,
+  );
+
+  const paint = () => {
+    const v = $("#pImg").value.trim();
+    $("#pPreview").innerHTML = v
+      ? `<img src="${imgURL(v)}" alt="" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'none',textContent:'الصورة مش موجودة على المسار ده'}))">`
+      : `<span class="none">لا توجد صورة</span>`;
+  };
+  paint();
+  $("#pImg").addEventListener("input", paint);
+
+  $("#pForm").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const np = formToProduct();
+
+    const bad = (sel, cond) => {
+      $(sel).closest(".f").classList.toggle("bad", !cond);
+      return cond;
+    };
+    let ok = true;
+    ok = bad("#pId", !!np.id) && ok;
+    ok = bad("#pName", !!np.name) && ok;
+    ok = bad("#pImg", !!np.img) && ok;
+    /* السعر ممكن يبقى فاضي لو المنتج ليه أنواع بأسعار */
+    ok = bad("#pPrice", np.price != null || (np.variants || []).some((v) => v.price != null)) && ok;
+    if (!ok) return toast("راجع الخانات المطلوبة");
+
+    if (np.price == null)
+      np.price = Math.min(...np.variants.filter((v) => v.price != null).map((v) => v.price));
+    if (!np.short) np.short = (np.components || []).join(" + ") || np.name;
+
+    if (editingId) {
+      if (np.id !== editingId && PRODUCTS.some((x) => x.id === np.id))
+        return toast("الكود ده مستخدم في منتج تاني");
+      PRODUCTS[PRODUCTS.findIndex((x) => x.id === editingId)] = np;
+    } else {
+      if (PRODUCTS.some((x) => x.id === np.id)) return toast("الكود ده مستخدم قبل كده");
+      PRODUCTS.push(np);
+    }
+
+    saveCatalog();
+    closeModal();
+    toast(editingId ? "تم حفظ التعديلات" : "تمت إضافة المنتج");
+    renderAll();
+  });
 }
 
 function formToProduct() {
@@ -566,6 +755,7 @@ function formToProduct() {
     oldPrice: $("#pOld").value === "" ? null : Number($("#pOld").value),
     specs: lines($("#pSpecs").value),
   };
+  if ($("#pStock").value !== "") p.stock = Number($("#pStock").value);
   if ($("#pFeatured").checked) p.featured = true;
   if ($("#pCushions").checked) p.cushions = true;
 
@@ -585,8 +775,7 @@ function formToProduct() {
   const dims = lines($("#pDims").value)
     .map((row) => {
       const i = row.indexOf(":");
-      if (i < 0) return null;
-      return { label: row.slice(0, i).trim(), value: row.slice(i + 1).trim() };
+      return i < 0 ? null : { label: row.slice(0, i).trim(), value: row.slice(i + 1).trim() };
     })
     .filter(Boolean);
   if (dims.length) p.dims = dims;
@@ -601,93 +790,29 @@ function formToProduct() {
   return p;
 }
 
-$("#pForm").addEventListener("submit", (e) => {
-  e.preventDefault();
-  const p = formToProduct();
-
-  const bad = (sel, cond) => {
-    $(sel).closest(".f").classList.toggle("bad", !cond);
-    return cond;
-  };
-  let ok = true;
-  ok = bad("#pId", !!p.id) && ok;
-  ok = bad("#pName", !!p.name) && ok;
-  ok = bad("#pImg", !!p.img) && ok;
-  /* السعر ممكن يبقى فاضي لو المنتج ليه أنواع بأسعار */
-  ok = bad("#pPrice", p.price != null || (p.variants || []).some((v) => v.price != null)) && ok;
-  if (!ok) return toast("راجع الخانات المطلوبة");
-
-  /* لو السعر فاضي ناخد أقل سعر بين الأنواع */
-  if (p.price == null) p.price = Math.min(...p.variants.filter((v) => v.price != null).map((v) => v.price));
-  if (!p.short) p.short = (p.components || []).join(" + ") || p.name;
-
-  const i = PRODUCTS.findIndex((x) => x.id === (editingProduct || p.id));
-  if (editingProduct) {
-    if (p.id !== editingProduct && PRODUCTS.some((x) => x.id === p.id))
-      return toast("الكود ده مستخدم في منتج تاني");
-    PRODUCTS[i] = p;
-  } else {
-    if (i > -1) return toast("الكود ده مستخدم قبل كده");
-    PRODUCTS.push(p);
-  }
-
-  saveCatalog();
-  toast(editingProduct ? "تم حفظ التعديلات" : "تمت إضافة المنتج");
-  editingProduct = null;
-  productToForm(null);
-  renderAll();
-});
-
-$("#pCancel").addEventListener("click", () => {
-  editingProduct = null;
-  productToForm(null);
-});
-
-document.addEventListener("click", (e) => {
-  const ed = e.target.closest("[data-edit-p]");
-  if (ed) {
-    const p = PRODUCTS.find((x) => x.id === ed.dataset.editP);
-    if (!p) return;
-    editingProduct = p.id;
-    productToForm(p);
-    $("#pFormTitle").scrollIntoView({ behavior: "smooth", block: "start" });
-    return;
-  }
-  const del = e.target.closest("[data-del-p]");
-  if (del) {
-    const p = PRODUCTS.find((x) => x.id === del.dataset.delP);
-    if (!p || !confirm(`تأكيد حذف «${p.name}»؟`)) return;
-    PRODUCTS.splice(PRODUCTS.indexOf(p), 1);
-    saveCatalog();
-    toast("تم حذف المنتج");
-    if (editingProduct === p.id) {
-      editingProduct = null;
-      productToForm(null);
-    }
-    renderAll();
-  }
-});
-
 /* ============================================================
    7) الأقسام
    ============================================================ */
-let editingCat = null;
-
 function renderCats() {
   $("#catsTable").innerHTML = CATEGORIES.length
     ? `<table>
-        <thead><tr><th></th><th>الكود</th><th>الاسم</th><th>الوصف</th><th>المنتجات</th><th></th></tr></thead>
+        <thead><tr><th>القسم</th><th>الكود</th><th>الوصف</th><th>المنتجات</th><th>إجراءات</th></tr></thead>
         <tbody>
           ${CATEGORIES.map(
             (c) => `<tr>
-            <td><img class="thumb-sm" style="height:40px" src="${imgURL(c.img)}" alt="" loading="lazy"></td>
-            <td class="mono">${esc(c.id)}</td>
-            <td>${esc(c.icon || "")} ${esc(c.name)}</td>
+            <td>
+              <div class="cell-prod">
+                <img src="${imgURL(c.img)}" alt="" loading="lazy" style="height:40px">
+                <div><b>${esc(c.icon || "")} ${esc(c.name)}</b></div>
+              </div>
+            </td>
+            <td class="mono muted">${esc(c.id)}</td>
             <td class="muted">${esc(c.desc || "")}</td>
-            <td>${PRODUCTS.filter((p) => p.cat === c.id).length}</td>
+            <td><span class="pill">${PRODUCTS.filter((p) => p.cat === c.id).length}</span></td>
             <td class="actions">
-              <button class="btn line sm" data-edit-c="${esc(c.id)}">تعديل</button>
-              <button class="btn danger sm" data-del-c="${esc(c.id)}">حذف</button>
+              <a class="ibtn" href="products.html?cat=${encodeURIComponent(c.id)}" target="_blank" rel="noopener" title="عرض">👁</a>
+              <button class="ibtn" data-edit-c="${esc(c.id)}" title="تعديل">✏️</button>
+              <button class="ibtn del" data-del-c="${esc(c.id)}" title="حذف">🗑</button>
             </td>
           </tr>`,
           ).join("")}
@@ -696,63 +821,12 @@ function renderCats() {
     : `<p class="empty-row">مفيش أقسام.</p>`;
 }
 
-function catToForm(c) {
-  $("#cId").value = c?.id || "";
-  $("#cName").value = c?.name || "";
-  $("#cIcon").value = c?.icon || "";
-  $("#cImg").value = c?.img || "";
-  $("#cDesc").value = c?.desc || "";
-  $("#cFormTitle").textContent = c ? "✏️ تعديل: " + c.name : "➕ إضافة قسم جديد";
-}
-
-$("#cForm").addEventListener("submit", (e) => {
-  e.preventDefault();
-  const c = {
-    id: $("#cId").value.trim(),
-    name: $("#cName").value.trim(),
-    icon: $("#cIcon").value.trim(),
-    img: $("#cImg").value.trim(),
-    desc: $("#cDesc").value.trim(),
-  };
-  if (!c.id || !c.name) return toast("الكود والاسم مطلوبين");
-
-  if (editingCat) {
-    const i = CATEGORIES.findIndex((x) => x.id === editingCat);
-    if (c.id !== editingCat) {
-      if (CATEGORIES.some((x) => x.id === c.id)) return toast("الكود ده مستخدم");
-      /* نقل منتجات القسم للكود الجديد */
-      PRODUCTS.forEach((p) => {
-        if (p.cat === editingCat) p.cat = c.id;
-      });
-    }
-    CATEGORIES[i] = c;
-  } else {
-    if (CATEGORIES.some((x) => x.id === c.id)) return toast("الكود ده مستخدم قبل كده");
-    CATEGORIES.push(c);
-  }
-
-  saveCatalog();
-  toast(editingCat ? "تم حفظ القسم" : "تمت إضافة القسم");
-  editingCat = null;
-  catToForm(null);
-  renderAll();
-});
-
-$("#cCancel").addEventListener("click", () => {
-  editingCat = null;
-  catToForm(null);
-});
+$("#addCat").addEventListener("click", () => catModal(null));
 
 document.addEventListener("click", (e) => {
   const ed = e.target.closest("[data-edit-c]");
-  if (ed) {
-    const c = CATEGORIES.find((x) => x.id === ed.dataset.editC);
-    if (!c) return;
-    editingCat = c.id;
-    catToForm(c);
-    $("#cFormTitle").scrollIntoView({ behavior: "smooth", block: "start" });
-    return;
-  }
+  if (ed) return catModal(CATEGORIES.find((x) => x.id === ed.dataset.editC) || null);
+
   const del = e.target.closest("[data-del-c]");
   if (del) {
     const c = CATEGORIES.find((x) => x.id === del.dataset.delC);
@@ -766,13 +840,76 @@ document.addEventListener("click", (e) => {
     CATEGORIES.splice(CATEGORIES.indexOf(c), 1);
     saveCatalog();
     toast("تم حذف القسم");
-    if (editingCat === c.id) {
-      editingCat = null;
-      catToForm(null);
-    }
     renderAll();
   }
 });
+
+function catModal(c) {
+  const editingId = c?.id || null;
+  modal(
+    c ? "✏️ تعديل: " + esc(c.name) : "＋ إضافة قسم جديد",
+    `
+    <form id="cForm">
+      <div class="form-grid">
+        <div class="f">
+          <label for="cId">كود القسم <small>إنجليزي بدون مسافات</small></label>
+          <input id="cId" class="mono" placeholder="iron-sets" value="${esc(c?.id || "")}">
+        </div>
+        <div class="f">
+          <label for="cName">اسم القسم</label>
+          <input id="cName" placeholder="اطقم حديد علب" value="${esc(c?.name || "")}">
+        </div>
+        <div class="f">
+          <label for="cIcon">الأيقونة <small>إيموجي</small></label>
+          <input id="cIcon" placeholder="🛋️" value="${esc(c?.icon || "")}">
+        </div>
+        <div class="f">
+          <label for="cImg">مسار الصورة</label>
+          <input id="cImg" class="mono" list="imgList" placeholder="assets/img/categories/iron.webp" value="${esc(c?.img || "")}">
+        </div>
+        <div class="f wide">
+          <label for="cDesc">وصف القسم</label>
+          <input id="cDesc" placeholder="حديد علب معالج ودهان فرن إلكتروستاتك" value="${esc(c?.desc || "")}">
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="btn gold" type="submit">${c ? "حفظ التعديلات" : "حفظ القسم"}</button>
+        <button class="btn line" data-close type="button">إلغاء</button>
+      </div>
+    </form>`,
+  );
+
+  $("#cForm").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const nc = {
+      id: $("#cId").value.trim(),
+      name: $("#cName").value.trim(),
+      icon: $("#cIcon").value.trim(),
+      img: $("#cImg").value.trim(),
+      desc: $("#cDesc").value.trim(),
+    };
+    if (!nc.id || !nc.name) return toast("الكود والاسم مطلوبين");
+
+    if (editingId) {
+      if (nc.id !== editingId) {
+        if (CATEGORIES.some((x) => x.id === nc.id)) return toast("الكود ده مستخدم");
+        /* نقل منتجات القسم للكود الجديد */
+        PRODUCTS.forEach((p) => {
+          if (p.cat === editingId) p.cat = nc.id;
+        });
+      }
+      CATEGORIES[CATEGORIES.findIndex((x) => x.id === editingId)] = nc;
+    } else {
+      if (CATEGORIES.some((x) => x.id === nc.id)) return toast("الكود ده مستخدم قبل كده");
+      CATEGORIES.push(nc);
+    }
+
+    saveCatalog();
+    closeModal();
+    toast(editingId ? "تم حفظ القسم" : "تمت إضافة القسم");
+    renderAll();
+  });
+}
 
 /* ============================================================
    8) الإعدادات
@@ -834,8 +971,7 @@ $("#backupFile").addEventListener("change", (e) => {
   r.onload = () => {
     try {
       const d = JSON.parse(r.result);
-      if (!Array.isArray(d.categories) || !Array.isArray(d.products))
-        throw new Error("bad");
+      if (!Array.isArray(d.categories) || !Array.isArray(d.products)) throw new Error("bad");
       if (!confirm("هيستبدل المنتجات والأقسام الحالية. تأكيد؟")) return;
       CATEGORIES = d.categories;
       PRODUCTS = d.products;
@@ -863,8 +999,7 @@ $("#passForm").addEventListener("submit", (e) => {
 });
 
 $("#resetCatalog").addEventListener("click", () => {
-  if (!confirm("هيرجّع المنتجات والأقسام لآخر نسخة منشورة ويمسح تعديلات المتصفح. تأكيد؟"))
-    return;
+  if (!confirm("هيرجّع المنتجات والأقسام لآخر نسخة منشورة ويمسح تعديلات المتصفح. تأكيد؟")) return;
   resetDB();
   CATEGORIES = DEFAULT_CATEGORIES;
   PRODUCTS = DEFAULT_PRODUCTS;

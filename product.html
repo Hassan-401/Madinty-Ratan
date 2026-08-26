@@ -66,7 +66,7 @@
 
     const colorsBlock = !p.cushions ? "" : `
       <div class="opt">
-        <span class="opt-h">لون الشلت <small id="colorName">(اختياري — نرشّحلك في الواتساب لو سِبته)</small></span>
+        <span class="opt-h">لون الشلت <b class="req">*</b> <small id="colorName">(اختر لونًا من الألوان دي)</small></span>
         <div class="swatches" id="swatches">
           ${CUSHION_COLORS.map(c => `
             <button type="button" class="sw" data-id="${c.id}" title="${esc(c.name)}"
@@ -168,18 +168,28 @@
     document.getElementById("swatches")?.addEventListener("click", e => {
       const b = e.target.closest(".sw");
       if (!b) return;
-      const picked = Number(b.dataset.id);
-      color = color === picked ? null : picked;         /* الضغط تاني يلغي الاختيار */
+      color = Number(b.dataset.id);
       document.querySelectorAll("#swatches .sw")
-        .forEach(x => x.classList.toggle("on", color != null && Number(x.dataset.id) === color));
-      const c = color != null ? colorById(color) : null;
-      document.getElementById("colorName").textContent =
-        c ? "— " + c.name : "(اختياري — نرشّحلك في الواتساب لو سِبته)";
+        .forEach(x => x.classList.toggle("on", Number(x.dataset.id) === color));
+      document.getElementById("colorName").textContent = "— " + colorById(color).name;
+      document.getElementById("swatches").classList.remove("missing");
     });
 
-    document.getElementById("addBtn").addEventListener("click", () =>
-      addToCart(p.id, qty, variant, color));
+    /** لون الشلت إجباري لأي منتج ليه شلت */
+    function requireColor() {
+      if (!p.cushions || color != null) return true;
+      const box = document.getElementById("swatches");
+      box.classList.add("missing");
+      box.scrollIntoView({ behavior: "smooth", block: "center" });
+      toast("اختر لون الشلت الأول");
+      return false;
+    }
+
+    document.getElementById("addBtn").addEventListener("click", () => {
+      if (requireColor()) addToCart(p.id, qty, variant, color);
+    });
     document.getElementById("buyBtn").addEventListener("click", () => {
+      if (!requireColor()) return;
       addToCart(p.id, qty, variant, color);
       location.href = "cart.html";
     });

@@ -20,17 +20,8 @@
         <div class="mark">🔐</div>
         <h1>لوحة التحكم</h1>
         <p>Madinty Ratan — إدارة الطلبات والمنتجات</p>
-        <div class="f">
-          <input
-            type="password"
-            id="pass"
-            placeholder="كلمة السر"
-            autocomplete="current-password"
-          />
-        </div>
-        <button class="btn gold block" style="margin-top: 12px" type="submit">
-          دخول
-        </button>
+        <input type="password" id="pass" placeholder="كلمة السر" autocomplete="current-password" />
+        <button class="btn gold block" style="margin-top: 12px" type="submit">دخول</button>
         <p class="muted" style="margin: 14px 0 0; font-size: 12px" id="passHint">
           كلمة السر الافتراضية: <b class="mono">madinty2025</b> — غيّرها من
           الإعدادات بعد أول دخول.
@@ -39,223 +30,171 @@
     </div>
 
     <!-- ============ اللوحة ============ -->
-    <div id="app" class="hidden">
-      <header class="admin">
-        <div class="wrap bar">
-          <div class="brand">
-            <span>🪑</span>
+    <div class="shell hidden" id="app">
+      <div class="side-backdrop" id="backdrop"></div>
+
+      <!-- ---------- السايدبار ---------- -->
+      <aside class="side" id="side">
+        <div class="brand">
+          <span class="av">M</span>
+          <div>
+            <b>Madinty Ratan</b>
+            <small>لوحة التحكم</small>
+          </div>
+        </div>
+
+        <div class="grp">الإدارة</div>
+        <button class="nav on" data-tab="home">
+          <span class="ic">📊</span><span class="lbl">نظرة عامة</span>
+        </button>
+        <button class="nav" data-tab="orders">
+          <span class="ic">📋</span><span class="lbl">الطلبات</span>
+          <span class="badge hidden" id="navOrders">0</span>
+        </button>
+        <button class="nav" data-tab="products">
+          <span class="ic">📦</span><span class="lbl">المنتجات</span>
+          <span class="badge" id="navProducts">0</span>
+        </button>
+        <button class="nav" data-tab="cats">
+          <span class="ic">🗂️</span><span class="lbl">الأقسام</span>
+          <span class="badge" id="navCats">0</span>
+        </button>
+
+        <div class="grp">أخرى</div>
+        <button class="nav" data-tab="settings">
+          <span class="ic">⚙️</span><span class="lbl">الإعدادات</span>
+        </button>
+        <a class="nav" href="index.html" target="_blank" rel="noopener">
+          <span class="ic">🏪</span><span class="lbl">عرض المتجر</span>
+        </a>
+        <div class="spacer"></div>
+        <button class="nav" id="logout">
+          <span class="ic">🚪</span><span class="lbl">تسجيل الخروج</span>
+        </button>
+      </aside>
+
+      <!-- ---------- المحتوى ---------- -->
+      <div class="content">
+        <!-- ===== نظرة عامة ===== -->
+        <section data-panel="home">
+          <div class="page-head">
+            <button class="side-toggle" data-menu>☰</button>
             <div>
-              Madinty Ratan
-              <small>لوحة التحكم</small>
+              <h1>نظرة عامة</h1>
+              <p>ملخص أداء المتجر</p>
             </div>
           </div>
-          <div class="spacer"></div>
-          <a class="view" href="index.html" target="_blank" rel="noopener"
-            >عرض الموقع ↗</a
-          >
-          <button class="btn line sm" id="logout">خروج</button>
-        </div>
-        <div class="wrap">
-          <div class="tabs" id="tabs">
-            <button data-tab="home" class="on">نظرة عامة</button>
-            <button data-tab="orders">
-              الطلبات<span class="pill hidden" id="newPill">0</span>
-            </button>
-            <button data-tab="products">المنتجات</button>
-            <button data-tab="cats">الأقسام</button>
-            <button data-tab="settings">الإعدادات</button>
-          </div>
-        </div>
-      </header>
 
-      <main class="wrap">
-        <!-- ---------- نظرة عامة ---------- -->
-        <section data-panel="home">
           <div class="stats" id="homeStats"></div>
+
           <div class="panel">
-            <h2>🧾 آخر الطلبات <span class="spacer"></span>
-              <button class="btn line sm" data-goto="orders">كل الطلبات</button>
-            </h2>
+            <div class="head">
+              <h2>🧾 أحدث الطلبات</h2>
+              <span class="spacer"></span>
+              <button class="btn line sm" data-goto="orders">عرض كل الطلبات ←</button>
+            </div>
             <div class="tablebox" id="homeOrders"></div>
           </div>
-          <div class="panel">
-            <h2>📦 المنتجات حسب القسم</h2>
-            <div class="tablebox" id="homeCats"></div>
+
+          <div class="cols2">
+            <div class="panel">
+              <div class="head"><h2>🔥 الأكثر مبيعًا</h2></div>
+              <div class="body" id="topSellers"></div>
+            </div>
+            <div class="panel">
+              <div class="head"><h2>⚠️ مخزون منخفض</h2></div>
+              <div class="body" id="lowStock"></div>
+            </div>
           </div>
         </section>
 
-        <!-- ---------- الطلبات ---------- -->
+        <!-- ===== الطلبات ===== -->
         <section data-panel="orders" class="hidden">
-          <div class="notice info" id="ordersNotice">
-            <b>مهم:</b> الموقع ثابت من غير سيرفر، فالطلبات بتتسجّل هنا فقط لو
-            العميل عمل الأوردر من نفس الجهاز والمتصفح ده. الطلبات الحقيقية بتوصلك
-            على الواتساب — استخدم زر <b>«لصق رسالة واتساب»</b> عشان تضيفها للوحة
-            وتتابع حالتها.
+          <div class="page-head">
+            <button class="side-toggle" data-menu>☰</button>
+            <div>
+              <h1>الطلبات</h1>
+              <p>متابعة الطلبات وتحديث حالتها</p>
+            </div>
+            <span class="spacer"></span>
+            <button class="btn gold" id="pasteOrder">📋 لصق رسالة واتساب</button>
+            <button class="btn line" id="exportCsv">⬇ CSV</button>
+          </div>
+
+          <div class="notice info">
+            الموقع ثابت من غير سيرفر، فالطلبات بتتسجّل هنا لو الأوردر اتعمل من
+            نفس الجهاز. الطلبات الحقيقية بتوصلك على الواتساب — استخدم
+            <b>«لصق رسالة واتساب»</b> عشان تضيفها للوحة وتتابع حالتها.
           </div>
 
           <div class="stats" id="orderStats"></div>
 
           <div class="panel">
-            <h2>🧾 الطلبات <span class="spacer"></span>
-              <button class="btn gold sm" id="pasteOrder">📋 لصق رسالة واتساب</button>
-              <button class="btn line sm" id="exportCsv">⬇ CSV</button>
-            </h2>
-            <div class="toolbar">
-              <input id="oSearch" placeholder="ابحث برقم الطلب أو الاسم أو الموبايل…" />
-              <select id="oStatus"><option value="">كل الحالات</option></select>
+            <div class="head">
+              <h2>كل الطلبات</h2>
+              <span class="spacer"></span>
+              <div class="toolbar">
+                <input id="oSearch" placeholder="🔍 رقم الطلب أو الاسم أو الموبايل" />
+                <select id="oStatus"><option value="">كل الحالات</option></select>
+              </div>
             </div>
             <div class="tablebox" id="ordersTable"></div>
           </div>
         </section>
 
-        <!-- ---------- المنتجات ---------- -->
+        <!-- ===== المنتجات ===== -->
         <section data-panel="products" class="hidden">
-          <div class="panel">
-            <h2 id="pFormTitle">➕ إضافة منتج جديد</h2>
-            <form id="pForm">
-              <div class="form-grid">
-                <div class="f">
-                  <label for="pId">كود المنتج (SKU) <small>لا يتكرر</small></label>
-                  <input id="pId" class="mono" placeholder="MR-IRON-09" />
-                </div>
-                <div class="f">
-                  <label for="pCat">القسم</label>
-                  <select id="pCat"></select>
-                </div>
-                <div class="f">
-                  <label for="pName">اسم المنتج</label>
-                  <input id="pName" placeholder="طقم حديد علب 4 × 8" />
-                </div>
-                <div class="f">
-                  <label for="pShort">وصف مختصر</label>
-                  <input id="pShort" placeholder="كنبة 3 مقعد + 2 كرسي + ترابيزة" />
-                </div>
-                <div class="f">
-                  <label for="pPrice">السعر (ج.م)</label>
-                  <input id="pPrice" type="number" min="0" step="50" />
-                </div>
-                <div class="f">
-                  <label for="pOld">السعر قبل الخصم <small>اختياري</small></label>
-                  <input id="pOld" type="number" min="0" step="50" />
-                </div>
-                <div class="f wide">
-                  <label for="pImg">مسار الصورة</label>
-                  <input id="pImg" class="mono" list="imgList"
-                    placeholder="assets/img/products/رتان/رتان 1.webp" />
-                  <datalist id="imgList"></datalist>
-                </div>
-                <div class="f">
-                  <label>معاينة الصورة</label>
-                  <div class="preview" id="pPreview"><span class="none">لا توجد صورة</span></div>
-                </div>
-                <div class="f">
-                  <label>خيارات</label>
-                  <label class="check"><input type="checkbox" id="pFeatured" />
-                    يظهر في «الأكثر طلبًا» بالصفحة الرئيسية</label>
-                  <label class="check"><input type="checkbox" id="pCushions" />
-                    العميل يقدر يختار لون الشلت</label>
-                </div>
-                <div class="f wide">
-                  <label for="pComponents">مكونات الطقم <small>مكوّن في كل سطر</small></label>
-                  <textarea id="pComponents" placeholder="كنبة 3 مقعد&#10;2 كرسي&#10;ترابيزة"></textarea>
-                </div>
-                <div class="f wide">
-                  <label for="pSpecs">المواصفات <small>مواصفة في كل سطر</small></label>
-                  <textarea id="pSpecs" placeholder="حديد علب معالج&#10;دهان فرن إلكتروستاتك"></textarea>
-                </div>
-                <div class="f wide">
-                  <label for="pVariants">أنواع الطقم
-                    <small>سطر لكل نوع: الاسم | السعر | السعر القديم | مكون + مكون</small></label>
-                  <textarea id="pVariants" class="mono"
-                    placeholder="طقم 4 كراسي + ترابيزة | 5500 |  | 4 كراسي + ترابيزة"></textarea>
-                </div>
-                <div class="f wide">
-                  <label for="pDims">المقاسات <small>سطر لكل مقاس: التسمية: القيمة</small></label>
-                  <textarea id="pDims" placeholder="الترابيزة: 2 متر × 70 سم"></textarea>
-                </div>
-                <div class="f">
-                  <label for="pFrame">ألوان الحديد <small>مفصولة بفاصلة</small></label>
-                  <input id="pFrame" placeholder="أبيض، أسود، جولد" />
-                </div>
-                <div class="f">
-                  <label for="pWeave">ألوان الجدل <small>مفصولة بفاصلة</small></label>
-                  <input id="pWeave" placeholder="بيچ فاتح، بني غامق" />
-                </div>
-                <div class="f">
-                  <label for="pWarranty">الضمان</label>
-                  <input id="pWarranty" placeholder="ضمان جودة 100%" />
-                </div>
-                <div class="f">
-                  <label for="pLoad">الحمولة</label>
-                  <input id="pLoad" placeholder="تتحمل حتى 500 كيلو" />
-                </div>
-                <div class="f wide">
-                  <label for="pNote">ملاحظة على الألوان</label>
-                  <input id="pNote" placeholder="متاح تغيير أي لون" />
-                </div>
-              </div>
-              <div class="form-actions">
-                <button class="btn gold" type="submit" id="pSave">حفظ المنتج</button>
-                <button class="btn line" type="button" id="pCancel">إلغاء / منتج جديد</button>
-              </div>
-            </form>
+          <div class="page-head">
+            <button class="side-toggle" data-menu>☰</button>
+            <div>
+              <h1>المنتجات</h1>
+              <p>إضافة وتعديل وحذف المنتجات</p>
+            </div>
+            <span class="spacer"></span>
+            <button class="btn gold" id="addProduct">＋ إضافة منتج</button>
           </div>
 
           <div class="panel">
-            <h2>📦 كل المنتجات <span class="spacer"></span>
-              <span class="muted" id="pCount"></span>
-            </h2>
-            <div class="toolbar">
-              <input id="pSearch" placeholder="ابحث بالاسم أو الكود…" />
-              <select id="pFilterCat"><option value="">كل الأقسام</option></select>
+            <div class="head">
+              <h2>كل المنتجات</h2>
+              <span class="spacer"></span>
+              <div class="toolbar">
+                <input id="pSearch" placeholder="🔍 ابحث باسم المنتج" />
+                <select id="pFilterCat"><option value="">كل الأقسام</option></select>
+              </div>
             </div>
             <div class="tablebox" id="productsTable"></div>
           </div>
         </section>
 
-        <!-- ---------- الأقسام ---------- -->
+        <!-- ===== الأقسام ===== -->
         <section data-panel="cats" class="hidden">
-          <div class="panel">
-            <h2 id="cFormTitle">➕ إضافة قسم جديد</h2>
-            <form id="cForm">
-              <div class="form-grid">
-                <div class="f">
-                  <label for="cId">كود القسم <small>إنجليزي بدون مسافات</small></label>
-                  <input id="cId" class="mono" placeholder="iron-sets" />
-                </div>
-                <div class="f">
-                  <label for="cName">اسم القسم</label>
-                  <input id="cName" placeholder="اطقم حديد علب" />
-                </div>
-                <div class="f">
-                  <label for="cIcon">الأيقونة <small>إيموجي</small></label>
-                  <input id="cIcon" placeholder="🛋️" />
-                </div>
-                <div class="f">
-                  <label for="cImg">مسار الصورة</label>
-                  <input id="cImg" class="mono" list="imgList"
-                    placeholder="assets/img/categories/iron.webp" />
-                </div>
-                <div class="f wide">
-                  <label for="cDesc">وصف القسم</label>
-                  <input id="cDesc" placeholder="حديد علب معالج ودهان فرن إلكتروستاتك" />
-                </div>
-              </div>
-              <div class="form-actions">
-                <button class="btn gold" type="submit">حفظ القسم</button>
-                <button class="btn line" type="button" id="cCancel">إلغاء / قسم جديد</button>
-              </div>
-            </form>
+          <div class="page-head">
+            <button class="side-toggle" data-menu>☰</button>
+            <div>
+              <h1>الأقسام</h1>
+              <p>تنظيم المنتجات في أقسام</p>
+            </div>
+            <span class="spacer"></span>
+            <button class="btn gold" id="addCat">＋ إضافة قسم</button>
           </div>
 
           <div class="panel">
-            <h2>🗂️ كل الأقسام</h2>
+            <div class="head"><h2>كل الأقسام</h2></div>
             <div class="tablebox" id="catsTable"></div>
           </div>
         </section>
 
-        <!-- ---------- الإعدادات ---------- -->
+        <!-- ===== الإعدادات ===== -->
         <section data-panel="settings" class="hidden">
+          <div class="page-head">
+            <button class="side-toggle" data-menu>☰</button>
+            <div>
+              <h1>الإعدادات</h1>
+              <p>النشر والنسخ الاحتياطي وكلمة السر</p>
+            </div>
+          </div>
+
           <div class="notice warn">
             <b>خد بالك:</b> تعديلاتك على المنتجات والأقسام محفوظة في
             <b>المتصفح ده بس</b>. عشان تظهر لكل الزوّار، نزّل ملف
@@ -264,64 +203,73 @@
           </div>
 
           <div class="panel">
-            <h2>🚀 نشر التعديلات على الموقع</h2>
-            <p class="muted">
-              بيولّد ملف <b class="mono">data.js</b> فيه الأقسام والمنتجات
-              بشكلها الحالي — استبدل بيه الملف القديم واعمل commit &amp; push.
-            </p>
-            <button class="btn gold" id="dlData">⬇ تنزيل data.js</button>
-          </div>
-
-          <div class="panel">
-            <h2>💾 النسخ الاحتياطي</h2>
-            <p class="muted">
-              نسخة JSON فيها الأقسام والمنتجات والطلبات — للاحتفاظ بها أو نقلها
-              لجهاز تاني.
-            </p>
-            <div class="form-actions" style="border: 0; padding: 0; margin: 0">
-              <button class="btn line" id="dlBackup">⬇ تصدير نسخة</button>
-              <button class="btn line" id="upBackup">⬆ استيراد نسخة</button>
-              <input type="file" id="backupFile" accept="application/json" class="hidden" />
+            <div class="head"><h2>🚀 نشر التعديلات على الموقع</h2></div>
+            <div class="body">
+              <p class="muted" style="margin-top: 0">
+                بيولّد ملف <b class="mono">data.js</b> فيه الأقسام والمنتجات
+                بشكلها الحالي — استبدل بيه الملف القديم واعمل commit &amp; push.
+              </p>
+              <button class="btn gold" id="dlData">⬇ تنزيل data.js</button>
             </div>
           </div>
 
           <div class="panel">
-            <h2>🔑 كلمة السر</h2>
-            <p class="muted">
-              دي حماية بسيطة على مستوى المتصفح فقط — مش أمان حقيقي، لأن الموقع
-              ثابت من غير سيرفر. متحطش فيه بيانات حساسة.
-            </p>
-            <form id="passForm" class="form-grid">
-              <div class="f">
-                <label for="oldPass">كلمة السر الحالية</label>
-                <input type="password" id="oldPass" />
+            <div class="head"><h2>💾 النسخ الاحتياطي</h2></div>
+            <div class="body">
+              <p class="muted" style="margin-top: 0">
+                نسخة JSON فيها الأقسام والمنتجات والطلبات — للاحتفاظ بها أو
+                نقلها لجهاز تاني.
+              </p>
+              <div style="display: flex; gap: 9px; flex-wrap: wrap">
+                <button class="btn line" id="dlBackup">⬇ تصدير نسخة</button>
+                <button class="btn line" id="upBackup">⬆ استيراد نسخة</button>
+                <input type="file" id="backupFile" accept="application/json" class="hidden" />
               </div>
-              <div class="f">
-                <label for="newPass">كلمة السر الجديدة</label>
-                <input type="password" id="newPass" />
-              </div>
-              <div class="f" style="align-self: end">
-                <button class="btn" type="submit">تغيير</button>
-              </div>
-            </form>
+            </div>
           </div>
 
           <div class="panel">
-            <h2>♻️ استرجاع الافتراضي</h2>
-            <p class="muted">
-              بيرجّع المنتجات والأقسام لآخر نسخة منشورة في
-              <b class="mono">data.js</b> ويمسح تعديلات المتصفح. الطلبات مش
-              بتتأثر.
-            </p>
-            <div class="form-actions" style="border: 0; padding: 0; margin: 0">
-              <button class="btn line" id="resetCatalog">استرجاع المنتجات والأقسام</button>
-              <button class="btn danger" id="clearOrders">🗑 مسح كل الطلبات</button>
+            <div class="head"><h2>🔑 كلمة السر</h2></div>
+            <div class="body">
+              <p class="muted" style="margin-top: 0">
+                دي حماية بسيطة على مستوى المتصفح فقط — مش أمان حقيقي، لأن الموقع
+                ثابت من غير سيرفر. متحطش فيه بيانات حساسة.
+              </p>
+              <form id="passForm" class="form-grid">
+                <div class="f">
+                  <label for="oldPass">كلمة السر الحالية</label>
+                  <input type="password" id="oldPass" />
+                </div>
+                <div class="f">
+                  <label for="newPass">كلمة السر الجديدة</label>
+                  <input type="password" id="newPass" />
+                </div>
+                <div class="f" style="align-self: end">
+                  <button class="btn" type="submit">تغيير</button>
+                </div>
+              </form>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="head"><h2>♻️ استرجاع الافتراضي</h2></div>
+            <div class="body">
+              <p class="muted" style="margin-top: 0">
+                بيرجّع المنتجات والأقسام لآخر نسخة منشورة في
+                <b class="mono">data.js</b> ويمسح تعديلات المتصفح. الطلبات مش
+                بتتأثر.
+              </p>
+              <div style="display: flex; gap: 9px; flex-wrap: wrap">
+                <button class="btn line" id="resetCatalog">استرجاع المنتجات والأقسام</button>
+                <button class="btn danger" id="clearOrders">🗑 مسح كل الطلبات</button>
+              </div>
             </div>
           </div>
         </section>
-      </main>
+      </div>
     </div>
 
+    <datalist id="imgList"></datalist>
     <div id="modalHost"></div>
     <div id="toast"></div>
 
