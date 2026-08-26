@@ -106,11 +106,16 @@
   </div>
 </div>
 
+<script src="assets/js/config.js"></script>
 <script src="assets/js/data.js"></script>
+<script src="assets/js/sb.js"></script>
 <script src="assets/js/app.js"></script>
 <script>
   renderHeader("cart");
+  renderFooter();
 
+  /* أسماء وأسعار المنتجات بتيجي من قاعدة البيانات */
+  storeReady(() => {
   const layout = document.getElementById("cartLayout");
   const empty  = document.getElementById("emptyState");
   const done   = document.getElementById("doneState");
@@ -239,9 +244,14 @@
     };
 
     const order = buildOrder(customer);
-    addOrder(order);                       /* يتسجّل في لوحة التحكم */
+    addOrder(order);                       /* نسخة احتياطية في متصفح العميل */
+
+    /* الواتساب لازم يتفتح من نفس ضغطة الزرار عشان المتصفح ما يمنعوش */
     const url = orderWhatsAppUrl(order);
     window.open(url, "_blank");
+
+    /* وبعدين نبعت الطلب للوحة التحكم — من غير ما نأخّر العميل */
+    sendOrder(order);
 
     document.getElementById("resendLink").href = url;
     document.getElementById("doneNo").textContent = order.no;
@@ -253,7 +263,7 @@
   });
 
   renderCart();
-  renderFooter();
+  });
 </script>
 </body>
 </html>

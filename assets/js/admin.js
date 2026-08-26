@@ -1,54 +1,79 @@
 /* ============================================================
    Madinty Ratan — لوحة التحكم
    ------------------------------------------------------------
-   بتشتغل كلها في المتصفح (من غير سيرفر):
-   • المنتجات والأقسام  -> localStorage تحت المفتاح mr_db_v1
-   • الطلبات            -> localStorage تحت المفتاح mr_orders_v1
-   عشان تعديلات الكتالوج تظهر لكل الزوّار لازم تنزّل data.js
-   من تبويب الإعدادات وترفعه على GitHub.
+   كل البيانات في Supabase:
+   • categories / products  -> الكتالوج اللي الموقع بيعرضه
+   • orders                 -> الطلبات الجاية من الموقع
+   أي تعديل هنا بيظهر للزوّار على طول من غير رفع ولا إعادة نشر.
+
+   الإعداد في: assets/js/config.js + supabase/schema.sql
    ============================================================ */
+
+/* الطلبات المحمّلة حاليًا (الكتالوج في CATEGORIES / PRODUCTS من app.js) */
+let ORDERS = [];
 
 /* ============================================================
    1) الدخول
    ------------------------------------------------------------
-   ⚠️ ده قفل شكلي على مستوى المتصفح، مش أمان حقيقي — أي حد يقدر
-   يقرا ملفات الموقع. متحطش هنا بيانات حساسة.
+   حساب Supabase عادي. الصلاحية مش بمجرد إنك داخل — لازم إيميلك
+   يكون في جدول admins، وده اللي بيسمح بالكتابة في RLS.
    ============================================================ */
-const AUTH_KEY = "mr_admin_v1";
-const DEFAULT_PASS = "madinty2025";
-
-/** djb2 — مجرد تشفير بسيط عشان الباسورد ما تتخزنش نص صريح */
-function hash(s) {
-  let h = 5381;
-  for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) >>> 0;
-  return h.toString(36);
+function showSetup(msg) {
+  $("#loginForm").innerHTML = `
+    <div class="mark">⚙️</div>
+    <h1>محتاج إعداد</h1>
+    <p style="margin-bottom:16px">${msg}</p>
+    <p class="muted" style="font-size:12.5px;margin:0">
+      الخطوات كاملة في ملف <b class="mono">SETUP.md</b> في المشروع.
+    </p>`;
 }
-const storedPass = () => localStorage.getItem(AUTH_KEY) || hash(DEFAULT_PASS);
-const isDefaultPass = () => !localStorage.getItem(AUTH_KEY);
 
-function openApp() {
-  sessionStorage.setItem("mr_admin_ok", "1");
+async function openApp() {
+  try {
+    if (!(await SB.isAdmin())) {
+      await SB.signOut();
+      throw new Error(
+        "الحساب ده مش مسجّل كأدمن — ضيف إيميلك في جدول admins في Supabase",
+      );
+    }
+  } catch (err) {
+    toast(err.message);
+    $("#pass").value = "";
+    return;
+  }
+
   $("#loginScreen").classList.add("hidden");
   $("#app").classList.remove("hidden");
-  renderAll();
+  $("#sbWho").innerHTML = SB.email()
+    ? ` داخل باسم <b class="mono" dir="ltr">${esc(SB.email())}</b>.`
+    : "";
+  await refresh();
 }
 
-$("#loginForm").addEventListener("submit", (e) => {
+$("#loginForm").addEventListener("submit", async (e) => {
   e.preventDefault();
-  if (hash($("#pass").value) === storedPass()) openApp();
-  else {
-    toast("كلمة السر غلط");
+  const btn = $("#loginBtn");
+  btn.disabled = true;
+  btn.textContent = "لحظة…";
+  try {
+    await SB.signIn($("#email").value.trim(), $("#pass").value);
+    await openApp();
+  } catch (err) {
+    toast(
+      /Invalid login/i.test(err.message) ? "الإيميل أو كلمة السر غلط" : err.message,
+    );
     $("#pass").value = "";
     $("#pass").focus();
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "دخول";
   }
 });
 
-$("#logout").addEventListener("click", () => {
-  sessionStorage.removeItem("mr_admin_ok");
+$("#logout").addEventListener("click", async () => {
+  await SB.signOut();
   location.reload();
 });
-
-if (!isDefaultPass()) $("#passHint").classList.add("hidden");
 
 /* ============================================================
    2) التنقّل
@@ -78,8 +103,6 @@ document.addEventListener("click", (e) => {
 /* ============================================================
    3) أدوات مشتركة
    ============================================================ */
-const saveCatalog = () => writeDB({ categories: CATEGORIES, products: PRODUCTS });
-
 const fmtDate = (iso) =>
   new Date(iso).toLocaleString("ar-EG-u-nu-latn", {
     dateStyle: "medium",
@@ -94,6 +117,21 @@ const commas = (t) =>
 
 /** الحد اللي تحته يعتبر المخزون منخفض */
 const LOW_STOCK = 5;
+
+/** بتلفّ أي عملية على القاعدة: تعرض غلط مفهوم وتحدّث اللوحة بعدها */
+async function run(fn, okMsg) {
+  try {
+    await fn();
+    if (okMsg) toast(okMsg);
+    await refresh();
+    return true;
+  } catch (err) {
+    console.error(err);
+    toast("فشلت العملية: " + err.message);
+    await refresh();
+    return false;
+  }
+}
 
 function download(name, text, type = "application/json") {
   const url = URL.createObjectURL(new Blob([text], { type: type + ";charset=utf-8" }));
@@ -128,6 +166,56 @@ function refreshImgList() {
   $("#imgList").innerHTML = paths.map((p) => `<option value="${esc(p)}">`).join("");
 }
 
+/** خانة صورة + رفع + معاينة — بنستخدمها في المنتج والقسم */
+function imgField(id, value, placeholder) {
+  return `
+    <div class="f wide">
+      <label for="${id}">الصورة</label>
+      <input id="${id}" class="mono" list="imgList" value="${esc(value || "")}"
+             placeholder="${esc(placeholder)}">
+      <div class="upload-row">
+        <button class="btn line sm" type="button" data-upload="${id}">⬆ ارفع صورة من جهازك</button>
+        <input type="file" accept="image/*" class="hidden" id="${id}File">
+        <span class="muted" id="${id}Status"></span>
+      </div>
+      <div class="preview" id="${id}Preview"></div>
+    </div>`;
+}
+
+/** بتربط المعاينة والرفع بخانة صورة اتعملت بـ imgField */
+function wireImgField(id) {
+  const input = $("#" + id);
+  const paint = () => {
+    const v = input.value.trim();
+    $(`#${id}Preview`).innerHTML = v
+      ? `<img src="${imgURL(v)}" alt="" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'none',textContent:'الصورة مش موجودة على المسار ده'}))">`
+      : `<span class="none">لا توجد صورة</span>`;
+  };
+  paint();
+  input.addEventListener("input", paint);
+
+  const file = $(`#${id}File`);
+  const status = $(`#${id}Status`);
+  $(`[data-upload="${id}"]`).addEventListener("click", () => file.click());
+  file.addEventListener("change", async () => {
+    const f = file.files[0];
+    file.value = "";
+    if (!f) return;
+    if (f.size > 5 * 1024 * 1024) {
+      status.textContent = "الصورة أكبر من 5 ميجا — صغّرها الأول.";
+      return;
+    }
+    status.textContent = "بيرفع…";
+    try {
+      input.value = await SB.upload(f, id === "cImg" ? "categories" : "products");
+      status.textContent = "تم الرفع ✓";
+      paint();
+    } catch (err) {
+      status.textContent = "فشل الرفع: " + err.message;
+    }
+  });
+}
+
 /** شارة المخزون — المخزون اختياري، لو مش متحدد بتظهر شرطة */
 function stockPill(p) {
   if (p.stock == null || p.stock === "") return `<span class="pill none">—</span>`;
@@ -136,10 +224,10 @@ function stockPill(p) {
   return `<span class="pill ${k}">${n}</span>`;
 }
 
-/** عدد القطع المباعة لكل منتج (بالاسم — الطلبات الملصوقة مالهاش كود) */
+/** عدد القطع المباعة لكل منتج (بالاسم كمان — الطلبات الملصوقة مالهاش كود) */
 function soldMap() {
   const m = new Map();
-  for (const o of getOrders()) {
+  for (const o of ORDERS) {
     if (o.status === "ملغي") continue;
     for (const it of o.items) {
       const key = it.id || it.name;
@@ -154,15 +242,14 @@ const soldOf = (p, m) => (m.get(p.id) || 0) + (m.get(p.name) || 0);
    4) نظرة عامة
    ============================================================ */
 function renderHome() {
-  const orders = getOrders();
-  const live = orders.filter((o) => o.status !== "ملغي");
-  const pending = orders.filter((o) => o.status === "جديد").length;
+  const live = ORDERS.filter((o) => o.status !== "ملغي");
+  const pending = ORDERS.filter((o) => o.status === "جديد").length;
   const revenue = live.reduce((s, o) => s + o.total, 0);
   const pieces = live.reduce((s, o) => s + o.items.reduce((x, i) => x + i.qty, 0), 0);
 
   $("#homeStats").innerHTML = [
     ["gold", "💰", money(revenue), "إجمالي المبيعات"],
-    ["blue", "🧾", orders.length, `عدد الطلبات${pending ? ` (${pending} قيد المراجعة)` : ""}`],
+    ["blue", "🧾", ORDERS.length, `عدد الطلبات${pending ? ` (${pending} قيد المراجعة)` : ""}`],
     ["forest", "📦", PRODUCTS.length, "عدد المنتجات"],
     ["terra", "🛍️", pieces, "قطعة مباعة"],
   ]
@@ -180,8 +267,8 @@ function renderHome() {
   $("#navProducts").textContent = PRODUCTS.length;
   $("#navCats").textContent = CATEGORIES.length;
 
-  $("#homeOrders").innerHTML = orders.length
-    ? ordersTableHTML(orders.slice(0, 5))
+  $("#homeOrders").innerHTML = ORDERS.length
+    ? ordersTableHTML(ORDERS.slice(0, 5))
     : `<p class="empty-row">مفيش طلبات لسه.</p>`;
 
   /* --- الأكثر مبيعًا --- */
@@ -237,7 +324,7 @@ $("#oStatus").innerHTML += ORDER_STATUSES.map(
 function filteredOrders() {
   const q = $("#oSearch").value.trim().toLowerCase();
   const st = $("#oStatus").value;
-  return getOrders().filter((o) => {
+  return ORDERS.filter((o) => {
     if (st && o.status !== st) return false;
     if (!q) return true;
     return [o.no, o.customer.name, o.customer.phone, o.customer.phone2, o.customer.gov]
@@ -290,11 +377,10 @@ function ordersTableHTML(list) {
 }
 
 function renderOrders() {
-  const all = getOrders();
-  const n = (s) => all.filter((o) => o.status === s).length;
+  const n = (s) => ORDERS.filter((o) => o.status === s).length;
 
   $("#orderStats").innerHTML = [
-    ["blue", "🧾", all.length, "كل الطلبات"],
+    ["blue", "🧾", ORDERS.length, "كل الطلبات"],
     ["terra", "🆕", n("جديد"), "جديد"],
     ["gold", "🛠️", n("قيد التجهيز") + n("تم التأكيد"), "قيد التجهيز"],
     ["forest", "✅", n("تم التسليم"), "تم التسليم"],
@@ -312,9 +398,9 @@ function renderOrders() {
   $("#ordersTable").innerHTML = list.length
     ? ordersTableHTML(list)
     : `<p class="empty-row">${
-        all.length
+        ORDERS.length
           ? "مفيش طلبات مطابقة للبحث."
-          : "مفيش طلبات لسه — استخدم «لصق رسالة واتساب» عشان تضيف طلب."
+          : "مفيش طلبات لسه — أول أوردر من الموقع هيظهر هنا أوتوماتيك."
       }</p>`;
 }
 
@@ -325,14 +411,10 @@ $("#oStatus").addEventListener("change", renderOrders);
 document.addEventListener("change", (e) => {
   const sel = e.target.closest("select.status");
   if (!sel) return;
-  const list = getOrders();
-  const o = list.find((x) => x.no === sel.dataset.no);
-  if (!o) return;
-  o.status = sel.value;
-  saveOrders(list);
-  toast("تم تحديث حالة الطلب " + o.no);
-  renderOrders();
-  renderHome();
+  const no = sel.dataset.no;
+  const status = sel.value;
+  sel.disabled = true;
+  run(() => SB.setOrderStatus(no, status), "تم تحديث حالة الطلب " + no);
 });
 
 /* تفاصيل / حذف */
@@ -342,16 +424,14 @@ document.addEventListener("click", (e) => {
 
   const x = e.target.closest("[data-del-order]");
   if (x) {
-    if (!confirm("تأكيد حذف الطلب " + x.dataset.delOrder + "؟")) return;
-    saveOrders(getOrders().filter((o) => o.no !== x.dataset.delOrder));
-    toast("تم حذف الطلب");
-    renderOrders();
-    renderHome();
+    const no = x.dataset.delOrder;
+    if (!confirm("تأكيد حذف الطلب " + no + "؟")) return;
+    run(() => SB.delOrder(no), "تم حذف الطلب");
   }
 });
 
 function showOrder(no) {
-  const o = getOrders().find((x) => x.no === no);
+  const o = ORDERS.find((x) => x.no === no);
   if (!o) return;
   const c = o.customer;
   modal(
@@ -439,22 +519,19 @@ $("#exportCsv").addEventListener("click", () => {
 $("#pasteOrder").addEventListener("click", () => {
   modal(
     "إضافة طلب من رسالة واتساب",
-    `<p class="muted" style="margin-top:0">الصق رسالة الطلب اللي وصلتك على الواتساب زي ما هي، واللوحة هتقراها وتضيف الطلب.</p>
+    `<p class="muted" style="margin-top:0">لو عميل بعتلك طلب على الواتساب من غير ما يكمّل من الموقع، الصق الرسالة هنا واللوحة هتقراها وتضيفها.</p>
      <div class="f"><textarea id="waText" style="min-height:230px" class="mono"></textarea></div>
      <div class="form-actions">
        <button class="btn gold" id="waParse" type="button">تحليل وإضافة</button>
        <button class="btn line" data-close type="button">إلغاء</button>
      </div>`,
   );
-  $("#waParse").addEventListener("click", () => {
+  $("#waParse").addEventListener("click", async () => {
     const o = parseWhatsAppOrder($("#waText").value);
     if (!o) return toast("مش قادر أقرا الرسالة — اتأكد إنها رسالة طلب من الموقع");
-    if (getOrders().some((x) => x.no === o.no)) return toast("الطلب " + o.no + " مضاف قبل كده");
-    addOrder(o);
-    closeModal();
-    toast("تمت إضافة الطلب " + o.no);
-    renderOrders();
-    renderHome();
+    if (ORDERS.some((x) => x.no === o.no)) return toast("الطلب " + o.no + " مضاف قبل كده");
+    if (await run(() => SB.addOrder(o, "whatsapp"), "تمت إضافة الطلب " + o.no))
+      closeModal();
   });
 });
 
@@ -495,7 +572,7 @@ function parseWhatsAppOrder(text) {
   const shipping = /يُحدد|يحدد/.test(shipRaw) ? null : /مجان/.test(shipRaw) ? 0 : num(shipRaw);
 
   return {
-    no: grab(/رقم الطلب:\s*(\S+)/) || "MR-" + Date.now().toString().slice(-6),
+    no: grab(/رقم الطلب:\s*(\S+)/) || newOrderNo(),
     at: new Date().toISOString(),
     status: ORDER_STATUSES[0],
     customer: {
@@ -573,7 +650,10 @@ function renderProducts() {
 
 $("#pSearch").addEventListener("input", renderProducts);
 $("#pFilterCat").addEventListener("change", renderProducts);
-$("#addProduct").addEventListener("click", () => productModal(null));
+$("#addProduct").addEventListener("click", () => {
+  if (!CATEGORIES.length) return toast("ضيف قسم واحد على الأقل الأول");
+  productModal(null);
+});
 
 document.addEventListener("click", (e) => {
   const ed = e.target.closest("[data-edit-p]");
@@ -583,10 +663,7 @@ document.addEventListener("click", (e) => {
   if (del) {
     const p = PRODUCTS.find((x) => x.id === del.dataset.delP);
     if (!p || !confirm(`تأكيد حذف «${p.name}»؟`)) return;
-    PRODUCTS.splice(PRODUCTS.indexOf(p), 1);
-    saveCatalog();
-    toast("تم حذف المنتج");
-    renderAll();
+    run(() => SB.delProduct(p.id), "تم حذف المنتج");
   }
 });
 
@@ -638,15 +715,7 @@ function productModal(p) {
           <label class="check"><input type="checkbox" id="pCushions" ${p?.cushions ? "checked" : ""}>
             اختيار لون الشلت <b class="mono">إجباري</b> للعميل</label>
         </div>
-        <div class="f wide">
-          <label for="pImg">مسار الصورة</label>
-          <input id="pImg" class="mono" list="imgList" value="${esc(p?.img || "")}"
-            placeholder="assets/img/products/رتان/رتان 1.webp">
-        </div>
-        <div class="f wide">
-          <label>معاينة الصورة</label>
-          <div class="preview" id="pPreview"></div>
-        </div>
+        ${imgField("pImg", p?.img, "assets/img/products/رتان/رتان 1.webp")}
         <div class="f wide">
           <label for="pComponents">مكونات الطقم <small>مكوّن في كل سطر</small></label>
           <textarea id="pComponents" placeholder="كنبة 3 مقعد&#10;2 كرسي&#10;ترابيزة">${esc((p?.components || []).join("\n"))}</textarea>
@@ -699,16 +768,9 @@ function productModal(p) {
     true,
   );
 
-  const paint = () => {
-    const v = $("#pImg").value.trim();
-    $("#pPreview").innerHTML = v
-      ? `<img src="${imgURL(v)}" alt="" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'none',textContent:'الصورة مش موجودة على المسار ده'}))">`
-      : `<span class="none">لا توجد صورة</span>`;
-  };
-  paint();
-  $("#pImg").addEventListener("input", paint);
+  wireImgField("pImg");
 
-  $("#pForm").addEventListener("submit", (e) => {
+  $("#pForm").addEventListener("submit", async (e) => {
     e.preventDefault();
     const np = formToProduct();
 
@@ -728,19 +790,27 @@ function productModal(p) {
       np.price = Math.min(...np.variants.filter((v) => v.price != null).map((v) => v.price));
     if (!np.short) np.short = (np.components || []).join(" + ") || np.name;
 
-    if (editingId) {
-      if (np.id !== editingId && PRODUCTS.some((x) => x.id === np.id))
-        return toast("الكود ده مستخدم في منتج تاني");
-      PRODUCTS[PRODUCTS.findIndex((x) => x.id === editingId)] = np;
-    } else {
-      if (PRODUCTS.some((x) => x.id === np.id)) return toast("الكود ده مستخدم قبل كده");
-      PRODUCTS.push(np);
-    }
+    /* الترتيب في الموقع = مكانه الحالي في القايمة، والجديد في الآخر */
+    const sort = editingId
+      ? PRODUCTS.findIndex((x) => x.id === editingId)
+      : PRODUCTS.length;
 
-    saveCatalog();
-    closeModal();
-    toast(editingId ? "تم حفظ التعديلات" : "تمت إضافة المنتج");
-    renderAll();
+    if (editingId && np.id !== editingId) {
+      if (PRODUCTS.some((x) => x.id === np.id)) return toast("الكود ده مستخدم في منتج تاني");
+      if (await run(() => SB.renameProduct(editingId, np, sort), "تم حفظ التعديلات"))
+        closeModal();
+      return;
+    }
+    if (!editingId && PRODUCTS.some((x) => x.id === np.id))
+      return toast("الكود ده مستخدم قبل كده");
+
+    if (
+      await run(
+        () => SB.saveProduct(np, sort),
+        editingId ? "تم حفظ التعديلات" : "تمت إضافة المنتج",
+      )
+    )
+      closeModal();
   });
 }
 
@@ -818,7 +888,7 @@ function renderCats() {
           ).join("")}
         </tbody>
       </table>`
-    : `<p class="empty-row">مفيش أقسام.</p>`;
+    : `<p class="empty-row">مفيش أقسام — ابدأ بـ «استيراد الكتالوج الافتراضي» من الإعدادات.</p>`;
 }
 
 $("#addCat").addEventListener("click", () => catModal(null));
@@ -837,10 +907,7 @@ document.addEventListener("click", (e) => {
         `مينفعش تحذف «${c.name}» وفيه ${n} منتج.\nانقل المنتجات دي لقسم تاني أو احذفها الأول.`,
       );
     if (!confirm(`تأكيد حذف قسم «${c.name}»؟`)) return;
-    CATEGORIES.splice(CATEGORIES.indexOf(c), 1);
-    saveCatalog();
-    toast("تم حذف القسم");
-    renderAll();
+    run(() => SB.delCat(c.id), "تم حذف القسم");
   }
 });
 
@@ -863,23 +930,23 @@ function catModal(c) {
           <label for="cIcon">الأيقونة <small>إيموجي</small></label>
           <input id="cIcon" placeholder="🛋️" value="${esc(c?.icon || "")}">
         </div>
-        <div class="f">
-          <label for="cImg">مسار الصورة</label>
-          <input id="cImg" class="mono" list="imgList" placeholder="assets/img/categories/iron.webp" value="${esc(c?.img || "")}">
-        </div>
         <div class="f wide">
           <label for="cDesc">وصف القسم</label>
           <input id="cDesc" placeholder="حديد علب معالج ودهان فرن إلكتروستاتك" value="${esc(c?.desc || "")}">
         </div>
+        ${imgField("cImg", c?.img, "assets/img/categories/iron.webp")}
       </div>
       <div class="form-actions">
         <button class="btn gold" type="submit">${c ? "حفظ التعديلات" : "حفظ القسم"}</button>
         <button class="btn line" data-close type="button">إلغاء</button>
       </div>
     </form>`,
+    true,
   );
 
-  $("#cForm").addEventListener("submit", (e) => {
+  wireImgField("cImg");
+
+  $("#cForm").addEventListener("submit", async (e) => {
     e.preventDefault();
     const nc = {
       id: $("#cId").value.trim(),
@@ -890,73 +957,48 @@ function catModal(c) {
     };
     if (!nc.id || !nc.name) return toast("الكود والاسم مطلوبين");
 
-    if (editingId) {
-      if (nc.id !== editingId) {
-        if (CATEGORIES.some((x) => x.id === nc.id)) return toast("الكود ده مستخدم");
-        /* نقل منتجات القسم للكود الجديد */
-        PRODUCTS.forEach((p) => {
-          if (p.cat === editingId) p.cat = nc.id;
-        });
-      }
-      CATEGORIES[CATEGORIES.findIndex((x) => x.id === editingId)] = nc;
-    } else {
-      if (CATEGORIES.some((x) => x.id === nc.id)) return toast("الكود ده مستخدم قبل كده");
-      CATEGORIES.push(nc);
-    }
+    const sort = editingId
+      ? CATEGORIES.findIndex((x) => x.id === editingId)
+      : CATEGORIES.length;
 
-    saveCatalog();
-    closeModal();
-    toast(editingId ? "تم حفظ القسم" : "تمت إضافة القسم");
-    renderAll();
+    /* تغيير كود القسم بينقل منتجاته معاه أوتوماتيك (on update cascade) */
+    if (editingId && nc.id !== editingId) {
+      if (CATEGORIES.some((x) => x.id === nc.id)) return toast("الكود ده مستخدم");
+      if (await run(() => SB.renameCat(editingId, nc, sort), "تم حفظ القسم")) closeModal();
+      return;
+    }
+    if (!editingId && CATEGORIES.some((x) => x.id === nc.id))
+      return toast("الكود ده مستخدم قبل كده");
+
+    if (await run(() => SB.saveCat(nc, sort), editingId ? "تم حفظ القسم" : "تمت إضافة القسم"))
+      closeModal();
   });
 }
 
 /* ============================================================
    8) الإعدادات
    ============================================================ */
-
-/** يولّد ملف data.js كامل من الحالة الحالية — جاهز للرفع على GitHub */
-function buildDataJs() {
-  const j = (v) => JSON.stringify(v, null, 2);
-  return `/* ============================================================
-   Madinty Ratan — بيانات المتجر (المصدر الأساسي)
-   ------------------------------------------------------------
-   ⚙️ الملف ده اتولّد من لوحة التحكم بتاريخ ${new Date().toLocaleDateString("ar-EG-u-nu-latn")}
-   ============================================================ */
-
-const STORE = ${j(STORE)};
-
-/* روابط الخريطة تتولّد أوتوماتيك من STORE.map */
-const MAP_EMBED = \`https://www.google.com/maps?q=\${encodeURIComponent(STORE.map.query)}&z=\${STORE.map.zoom}&hl=ar&output=embed\`;
-const MAP_LINK  = \`https://www.google.com/maps/search/?api=1&query=\${encodeURIComponent(STORE.map.query)}\`;
-
-/* مصاريف الشحن بالجنيه — 0 = مجانًا، null = تُحدد عند التأكيد */
-const SHIPPING = ${j(SHIPPING)};
-
-/* قائمة المحافظات في نموذج الطلب */
-const GOVS = Object.keys(SHIPPING);
-
-/* ألوان الشلت المتاحة */
-const CUSHION_COLORS = ${j(CUSHION_COLORS)};
-
-/* الأقسام */
-const DEFAULT_CATEGORIES = ${j(CATEGORIES)};
-
-/* المنتجات (${PRODUCTS.length} منتج) */
-const DEFAULT_PRODUCTS = ${j(PRODUCTS)};
-`;
-}
-
-$("#dlData").addEventListener("click", () => {
-  download("data.js", buildDataJs(), "text/javascript");
-  toast("نزّل الملف وحطه مكان assets/js/data.js");
+$("#seedCatalog").addEventListener("click", async (e) => {
+  if (
+    !confirm(
+      `هيتنقل ${DEFAULT_CATEGORIES.length} قسم و${DEFAULT_PRODUCTS.length} منتج من data.js لقاعدة البيانات.\n` +
+        `المنتج اللي كوده موجود هيتحدّث ببيانات data.js. تأكيد؟`,
+    )
+  )
+    return;
+  e.target.disabled = true;
+  await run(
+    () => SB.importCatalog(DEFAULT_CATEGORIES, DEFAULT_PRODUCTS),
+    "تم الاستيراد — افتح الموقع وشوف",
+  );
+  e.target.disabled = false;
 });
 
 $("#dlBackup").addEventListener("click", () => {
   download(
     "madinty-backup-" + new Date().toISOString().slice(0, 10) + ".json",
     JSON.stringify(
-      { at: new Date().toISOString(), categories: CATEGORIES, products: PRODUCTS, orders: getOrders() },
+      { at: new Date().toISOString(), categories: CATEGORIES, products: PRODUCTS, orders: ORDERS },
       null,
       2,
     ),
@@ -966,66 +1008,95 @@ $("#dlBackup").addEventListener("click", () => {
 $("#upBackup").addEventListener("click", () => $("#backupFile").click());
 $("#backupFile").addEventListener("change", (e) => {
   const file = e.target.files[0];
+  e.target.value = "";
   if (!file) return;
   const r = new FileReader();
-  r.onload = () => {
+  r.onload = async () => {
+    let d;
     try {
-      const d = JSON.parse(r.result);
-      if (!Array.isArray(d.categories) || !Array.isArray(d.products)) throw new Error("bad");
-      if (!confirm("هيستبدل المنتجات والأقسام الحالية. تأكيد؟")) return;
-      CATEGORIES = d.categories;
-      PRODUCTS = d.products;
-      saveCatalog();
-      if (Array.isArray(d.orders) && confirm("تستورد الطلبات كمان؟")) saveOrders(d.orders);
-      toast("تم استيراد النسخة");
-      renderAll();
+      d = JSON.parse(r.result);
+      if (!Array.isArray(d.categories) || !Array.isArray(d.products)) throw new Error();
     } catch (err) {
-      toast("الملف مش نسخة صحيحة");
+      return toast("الملف مش نسخة صحيحة");
+    }
+    if (!confirm(`هيرجّع ${d.categories.length} قسم و${d.products.length} منتج للقاعدة. تأكيد؟`))
+      return;
+
+    await run(() => SB.importCatalog(d.categories, d.products), "تم استرجاع الكتالوج");
+
+    if (Array.isArray(d.orders) && d.orders.length && confirm("ترجّع الطلبات كمان؟")) {
+      let n = 0;
+      for (const o of d.orders) {
+        if (ORDERS.some((x) => x.no === o.no)) continue;
+        try {
+          await SB.addOrder(o, "backup");
+          n++;
+        } catch (err) {
+          /* الطلب موجود قبل كده أو بياناته ناقصة — نكمّل */
+        }
+      }
+      toast(`تم استرجاع ${n} طلب`);
+      await refresh();
     }
   };
   r.readAsText(file);
-  e.target.value = "";
 });
 
-$("#passForm").addEventListener("submit", (e) => {
+$("#passForm").addEventListener("submit", async (e) => {
   e.preventDefault();
-  if (hash($("#oldPass").value) !== storedPass()) return toast("كلمة السر الحالية غلط");
   const np = $("#newPass").value;
-  if (np.length < 6) return toast("كلمة السر الجديدة لازم 6 حروف على الأقل");
-  localStorage.setItem(AUTH_KEY, hash(np));
-  $("#passForm").reset();
-  $("#passHint").classList.add("hidden");
-  toast("تم تغيير كلمة السر");
-});
-
-$("#resetCatalog").addEventListener("click", () => {
-  if (!confirm("هيرجّع المنتجات والأقسام لآخر نسخة منشورة ويمسح تعديلات المتصفح. تأكيد؟")) return;
-  resetDB();
-  CATEGORIES = DEFAULT_CATEGORIES;
-  PRODUCTS = DEFAULT_PRODUCTS;
-  toast("تم الاسترجاع");
-  renderAll();
+  if (np.length < 8) return toast("كلمة السر لازم 8 حروف على الأقل");
+  if (np !== $("#newPass2").value) return toast("كلمتا السر مش زي بعض");
+  try {
+    await SB.changePassword(np);
+    $("#passForm").reset();
+    toast("تم تغيير كلمة السر");
+  } catch (err) {
+    toast("فشل التغيير: " + err.message);
+  }
 });
 
 $("#clearOrders").addEventListener("click", () => {
-  if (!confirm("هيمسح كل الطلبات نهائيًا. تأكيد؟")) return;
-  saveOrders([]);
-  toast("تم مسح الطلبات");
-  renderAll();
+  if (!ORDERS.length) return toast("مفيش طلبات أصلًا");
+  if (!confirm(`هيمسح ${ORDERS.length} طلب نهائيًا ومفيش رجوع. تأكيد؟`)) return;
+  run(() => SB.delAllOrders(), "تم مسح الطلبات");
 });
 
 /* ============================================================
-   9) تشغيل
+   9) التشغيل
    ============================================================ */
+async function refresh() {
+  const [cats, prods, orders] = await Promise.all([
+    SB.categories().catch(() => CATEGORIES),
+    SB.products().catch(() => PRODUCTS),
+    SB.orders().catch((err) => {
+      console.warn("تعذّر تحميل الطلبات:", err.message);
+      return ORDERS;
+    }),
+  ]);
+  CATEGORIES = cats;
+  PRODUCTS = prods;
+  ORDERS = orders;
+  renderAll();
+}
+
 function renderAll() {
   fillCatSelects();
   refreshImgList();
+  $("#seedCount").textContent =
+    `${DEFAULT_CATEGORIES.length} أقسام و${DEFAULT_PRODUCTS.length} منتج`;
   renderHome();
   renderOrders();
   renderProducts();
   renderCats();
 }
 
-/* لو الجلسة لسه مفتوحة ندخل على طول */
-if (sessionStorage.getItem("mr_admin_ok") === "1") openApp();
-else $("#pass").focus();
+(async function boot() {
+  if (!SB.configured)
+    return showSetup(
+      `حط <b class="mono">SUPABASE_URL</b> و <b class="mono">SUPABASE_ANON_KEY</b>
+       في ملف <b class="mono">assets/js/config.js</b> وارفع المشروع تاني.`,
+    );
+  if (await SB.signedIn()) await openApp();
+  else $("#email").focus();
+})();

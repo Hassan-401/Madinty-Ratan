@@ -876,3 +876,18 @@ td.actions > * {
     font-size: 22px;
   }
 }
+
+/* ---------- رفع صورة من داخل النموذج ---------- */
+.upload-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+.upload-row .muted {
+  font-size: 12.5px;
+}
+.upload-row + .preview {
+  margin-top: 8px;
+}

@@ -1518,3 +1518,28 @@ footer.site .social a:hover {
   padding: 9px;
   background: rgba(157, 86, 54, 0.05);
 }
+
+/* ---------- مؤشر التحميل (الكتالوج بييجي من قاعدة البيانات) ---------- */
+.loading {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 54px 0;
+  color: var(--ink-3);
+  font-size: 14.5px;
+}
+.loading .sp {
+  width: 19px;
+  height: 19px;
+  border: 2.5px solid rgba(0, 0, 0, 0.1);
+  border-top-color: var(--gold);
+  border-radius: 50%;
+  animation: mr-spin 0.7s linear infinite;
+}
+@keyframes mr-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

@@ -41,7 +41,7 @@
           <h2>الأقسام</h2>
           <p>اختر القسم اللي يناسب مساحتك</p>
         </div>
-        <div class="cats" id="catsGrid"></div>
+        <div class="cats" id="catsGrid"><div class="loading"><span class="sp"></span>جارٍ التحميل…</div></div>
       </div>
     </section>
 
@@ -52,7 +52,7 @@
           <h2>الأكثر طلبًا</h2>
           <p>مختارات من أفضل منتجاتنا</p>
         </div>
-        <div class="grid" id="featured"></div>
+        <div class="grid" id="featured"><div class="loading"><span class="sp"></span>جارٍ التحميل…</div></div>
         <div style="text-align: center; margin-top: 26px">
           <a class="btn btn-line" href="products.html">عرض جميع المنتجات ←</a>
         </div>
@@ -89,7 +89,9 @@
       </div>
     </section>
 
+    <script src="assets/js/config.js"></script>
     <script src="assets/js/data.js"></script>
+    <script src="assets/js/sb.js"></script>
     <script src="assets/js/app.js"></script>
     <script>
       renderHeader("home", true);
@@ -105,6 +107,8 @@
         )
         .join("");
 
+      /* الأقسام والمنتجات بييجوا من قاعدة البيانات، فبنستنى تحميلها */
+      storeReady(() => {
       document.getElementById("catsGrid").innerHTML = CATEGORIES.map(
         (c) => `
     <a class="cat" href="products.html?cat=${c.id}">
@@ -126,6 +130,7 @@
       )
         .map(productCard)
         .join("");
+      });
 
       renderFooter();
     </script>

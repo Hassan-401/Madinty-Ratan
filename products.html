@@ -19,7 +19,7 @@
     </div>
 
     <div class="filters" id="filters"></div>
-    <div class="grid" id="grid"></div>
+    <div class="grid" id="grid"><div class="loading"><span class="sp"></span>جارٍ التحميل…</div></div>
     <div class="empty" id="none" style="display:none">
       <div class="ic">🔍</div>
       <p>لا توجد منتجات في هذا القسم حاليًا.</p>
@@ -27,11 +27,16 @@
   </div>
 </section>
 
+<script src="assets/js/config.js"></script>
 <script src="assets/js/data.js"></script>
+<script src="assets/js/sb.js"></script>
 <script src="assets/js/app.js"></script>
 <script>
   renderHeader("products");
+  renderFooter();
 
+  /* الكتالوج بييجي من قاعدة البيانات — نستنى تحميله قبل الرسم */
+  storeReady(() => {
   const params  = new URLSearchParams(location.search);
   let current   = params.get("cat") || "all";
 
@@ -67,7 +72,7 @@
   });
 
   render();
-  renderFooter();
+  });
 </script>
 </body>
 </html>

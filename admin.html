@@ -20,11 +20,15 @@
         <div class="mark">🔐</div>
         <h1>لوحة التحكم</h1>
         <p>Madinty Ratan — إدارة الطلبات والمنتجات</p>
-        <input type="password" id="pass" placeholder="كلمة السر" autocomplete="current-password" />
-        <button class="btn gold block" style="margin-top: 12px" type="submit">دخول</button>
+        <input type="email" id="email" placeholder="الإيميل" dir="ltr"
+               autocomplete="username" />
+        <input type="password" id="pass" placeholder="كلمة السر" dir="ltr"
+               style="margin-top: 9px" autocomplete="current-password" />
+        <button class="btn gold block" style="margin-top: 12px" type="submit" id="loginBtn">
+          دخول
+        </button>
         <p class="muted" style="margin: 14px 0 0; font-size: 12px" id="passHint">
-          كلمة السر الافتراضية: <b class="mono">madinty2025</b> — غيّرها من
-          الإعدادات بعد أول دخول.
+          نفس الإيميل وكلمة السر اللي عملتهم في Supabase ← Authentication.
         </p>
       </form>
     </div>
@@ -122,9 +126,9 @@
           </div>
 
           <div class="notice info">
-            الموقع ثابت من غير سيرفر، فالطلبات بتتسجّل هنا لو الأوردر اتعمل من
-            نفس الجهاز. الطلبات الحقيقية بتوصلك على الواتساب — استخدم
-            <b>«لصق رسالة واتساب»</b> عشان تضيفها للوحة وتتابع حالتها.
+            أي أوردر يتعمل من الموقع بيظهر هنا أوتوماتيك. لو عميل كلّمك على
+            الواتساب من غير ما يكمّل من الموقع، تقدر تضيف طلبه بـ
+            <b>«لصق رسالة واتساب»</b>.
           </div>
 
           <div class="stats" id="orderStats"></div>
@@ -195,21 +199,24 @@
             </div>
           </div>
 
-          <div class="notice warn">
-            <b>خد بالك:</b> تعديلاتك على المنتجات والأقسام محفوظة في
-            <b>المتصفح ده بس</b>. عشان تظهر لكل الزوّار، نزّل ملف
-            <b class="mono">data.js</b> من تحت وارفعه مكان
-            <b class="mono">assets/js/data.js</b> في المشروع على GitHub.
+          <div class="notice info">
+            كل تعديل هنا بيتحفظ في قاعدة البيانات على طول وبيظهر لكل الزوّار
+            في ثواني — من غير رفع ولا إعادة نشر.
+            <span id="sbWho"></span>
           </div>
 
           <div class="panel">
-            <div class="head"><h2>🚀 نشر التعديلات على الموقع</h2></div>
+            <div class="head"><h2>📥 استيراد الكتالوج الافتراضي</h2></div>
             <div class="body">
               <p class="muted" style="margin-top: 0">
-                بيولّد ملف <b class="mono">data.js</b> فيه الأقسام والمنتجات
-                بشكلها الحالي — استبدل بيه الملف القديم واعمل commit &amp; push.
+                بينسخ الأقسام والمنتجات الموجودة في
+                <b class="mono">assets/js/data.js</b> لقاعدة البيانات. استخدمه
+                <b>مرة واحدة بعد أول تركيب</b>. المنتج اللي كوده موجود بالفعل
+                بيتحدّث، والمنتجات اللي ضفتها من اللوحة مش بتتمسح.
               </p>
-              <button class="btn gold" id="dlData">⬇ تنزيل data.js</button>
+              <button class="btn gold" id="seedCatalog">
+                استيراد <span id="seedCount"></span>
+              </button>
             </div>
           </div>
 
@@ -218,11 +225,11 @@
             <div class="body">
               <p class="muted" style="margin-top: 0">
                 نسخة JSON فيها الأقسام والمنتجات والطلبات — للاحتفاظ بها أو
-                نقلها لجهاز تاني.
+                استرجاعها لو حصل غلط.
               </p>
               <div style="display: flex; gap: 9px; flex-wrap: wrap">
                 <button class="btn line" id="dlBackup">⬇ تصدير نسخة</button>
-                <button class="btn line" id="upBackup">⬆ استيراد نسخة</button>
+                <button class="btn line" id="upBackup">⬆ استرجاع نسخة</button>
                 <input type="file" id="backupFile" accept="application/json" class="hidden" />
               </div>
             </div>
@@ -232,17 +239,16 @@
             <div class="head"><h2>🔑 كلمة السر</h2></div>
             <div class="body">
               <p class="muted" style="margin-top: 0">
-                دي حماية بسيطة على مستوى المتصفح فقط — مش أمان حقيقي، لأن الموقع
-                ثابت من غير سيرفر. متحطش فيه بيانات حساسة.
+                بتغيّر كلمة سر حسابك في Supabase.
               </p>
               <form id="passForm" class="form-grid">
                 <div class="f">
-                  <label for="oldPass">كلمة السر الحالية</label>
-                  <input type="password" id="oldPass" />
+                  <label for="newPass">كلمة السر الجديدة</label>
+                  <input type="password" id="newPass" dir="ltr" />
                 </div>
                 <div class="f">
-                  <label for="newPass">كلمة السر الجديدة</label>
-                  <input type="password" id="newPass" />
+                  <label for="newPass2">تأكيد كلمة السر</label>
+                  <input type="password" id="newPass2" dir="ltr" />
                 </div>
                 <div class="f" style="align-self: end">
                   <button class="btn" type="submit">تغيير</button>
@@ -252,17 +258,12 @@
           </div>
 
           <div class="panel">
-            <div class="head"><h2>♻️ استرجاع الافتراضي</h2></div>
+            <div class="head"><h2>⚠️ منطقة الخطر</h2></div>
             <div class="body">
               <p class="muted" style="margin-top: 0">
-                بيرجّع المنتجات والأقسام لآخر نسخة منشورة في
-                <b class="mono">data.js</b> ويمسح تعديلات المتصفح. الطلبات مش
-                بتتأثر.
+                مسح الطلبات نهائي ومفيش رجوع — اعمل تصدير نسخة الأول.
               </p>
-              <div style="display: flex; gap: 9px; flex-wrap: wrap">
-                <button class="btn line" id="resetCatalog">استرجاع المنتجات والأقسام</button>
-                <button class="btn danger" id="clearOrders">🗑 مسح كل الطلبات</button>
-              </div>
+              <button class="btn danger" id="clearOrders">🗑 مسح كل الطلبات</button>
             </div>
           </div>
         </section>
@@ -273,7 +274,9 @@
     <div id="modalHost"></div>
     <div id="toast"></div>
 
+    <script src="assets/js/config.js"></script>
     <script src="assets/js/data.js"></script>
+    <script src="assets/js/sb.js"></script>
     <script src="assets/js/app.js"></script>
     <script src="assets/js/admin.js"></script>
   </body>

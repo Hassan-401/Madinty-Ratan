@@ -9,7 +9,7 @@
 const STORE = {
   name: "Madinty Ratan",
   tagline: "أثاث خارجي فاخر — حديد علب · رتان · دبار",
-  whatsapp: "201068104986",          // رقم استقبال الطلبات (بصيغة دولية بدون +)
+  whatsapp: "201068104986", // رقم استقبال الطلبات (بصيغة دولية بدون +)
   whatsappDisplay: "01068104986",
   phone: "01068104986",
   email: "gamal236emad@gmail.com",
@@ -17,53 +17,51 @@ const STORE = {
   freeShipping: "التوصيل مجانًا داخل القاهرة والجيزة",
   shippingNote: "التوصيل متاح لباقي المحافظات بمصاريف حسب المحافظة",
   facebook: "https://www.facebook.com/MadintyRatan14",
-  hours: "يوميًا من 9 ص حتى 9 م",
+  hours: "متاحين 24 ساعة — طول أيام الأسبوع",
 
   /* موقع المصنع على الخريطة — غيّر query لأي عنوان أو إحداثيات (خط العرض,خط الطول) */
   map: {
     query: "أشمون، محافظة المنوفية، مصر",
-    zoom: 13
-  }
+    zoom: 13,
+  },
 };
 
 /* روابط الخريطة تتولّد أوتوماتيك من STORE.map */
 const MAP_EMBED = `https://www.google.com/maps?q=${encodeURIComponent(STORE.map.query)}&z=${STORE.map.zoom}&hl=ar&output=embed`;
-const MAP_LINK  = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(STORE.map.query)}`;
+const MAP_LINK = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(STORE.map.query)}`;
 
 /* ============================================================
    مصاريف الشحن بالجنيه — 0 يعني مجانًا، null يعني "تُحدد عند التأكيد"
    ============================================================ */
 const SHIPPING = {
-  "القاهرة": 0,
-  "الجيزة": 0,
-  "المنوفية": 300,
-  "القليوبية": 400,
-  "الإسكندرية": 500,
-  "البحيرة": 500,
-  "دمياط": 500,
+  القاهرة: 0,
+  الجيزة: 0,
+  المنوفية: 300,
+  القليوبية: 400,
+  الإسكندرية: 500,
+  البحيرة: 500,
+  دمياط: 500,
   "كفر الشيخ": 500,
   "الوادي الجديد": 500,
-  "الدقهلية": 500,
-  "الشرقية": 500,
-  "السويس": 500,
+  الدقهلية: 500,
+  الشرقية: 500,
+  السويس: 500,
   "العين السخنة": 500,
-  "بورسعيد": 600,
-  "الغربية": 600,
-  "أسيوط": 600,
-  "الإسماعيلية": 600,
+  بورسعيد: 600,
+  الغربية: 600,
+  أسيوط: 600,
+  الإسماعيلية: 600,
   "بني سويف": 600,
-  "سوهاج": 600,
-  "قنا": 600,
-  "الفيوم": 650,
-  "مطروح": 700,
-  "الغردقة": 800,
-
-  /* مناطق التوصيل ليها سعر يتحدد وقت التأكيد */
-  "المنيا": null,
-  "الأقصر": null,
-  "أسوان": null,
-  "شمال سيناء": null,
-  "جنوب سيناء": null
+  سوهاج: 600,
+  قنا: 600,
+  الفيوم: 650,
+  مطروح: 700,
+  الغردقة: 800,
+  المنيا: 700,
+  الأقصر: 1000,
+  أسوان: 1000,
+  "شمال سيناء": 2000,
+  "جنوب سيناء": 2000,
 };
 
 /* قائمة المحافظات في نموذج الطلب — نفس ترتيب جدول الشحن */
@@ -97,7 +95,7 @@ const CUSHION_COLORS = [
   { id: 22, name: "أزرق زهري (Royal Blue)", hex: "#0938A6" },
   { id: 23, name: "كحلي (Navy Blue) / بترولي داكن", hex: "#0C2346" },
   { id: 24, name: "رمادي فاتح (Light Gray)", hex: "#BEBAB7" },
-  { id: 25, name: "رمادي غامق (Dark Gray)", hex: "#545454" }
+  { id: 25, name: "رمادي غامق (Dark Gray)", hex: "#545454" },
 ];
 
 /* ============================================================
@@ -105,21 +103,41 @@ const CUSHION_COLORS = [
    img = صورة القسم — لو ناقصة بتظهر الأيقونة بدلها
    ============================================================ */
 const DEFAULT_CATEGORIES = [
-  { id: "iron-sets", name: "اطقم حديد علب", icon: "🛋️",
+  {
+    id: "iron-sets",
+    name: "اطقم حديد علب",
+    icon: "🛋️",
     img: "assets/img/categories/iron.webp",
-    desc: "حديد علب معالج ودهان فرن إلكتروستاتك" },
-  { id: "dabar", name: "دبار", icon: "🪑",
+    desc: "حديد علب معالج ودهان فرن إلكتروستاتك",
+  },
+  {
+    id: "dabar",
+    name: "دبار",
+    icon: "🪑",
     img: "assets/img/categories/debar.webp",
-    desc: "دبار بيور مجدول يدويًا ومعالج ضد الماء والشمس" },
-  { id: "ratan", name: "رتان", icon: "🌿",
+    desc: "دبار بيور مجدول يدويًا ومعالج ضد الماء والشمس",
+  },
+  {
+    id: "ratan",
+    name: "رتان",
+    icon: "🌿",
     img: "assets/img/categories/rattan.webp",
-    desc: "رتان وشريط بيور بتصاميم عصرية" },
-  { id: "swings-rockers", name: "مراجيح وكراسي هزاز", icon: "🎏",
+    desc: "رتان وشريط بيور بتصاميم عصرية",
+  },
+  {
+    id: "swings-rockers",
+    name: "مراجيح وكراسي هزاز",
+    icon: "🎏",
     img: "assets/img/categories/swing.webp",
-    desc: "استرخاء لحديقتك وبلكونتك" },
-  { id: "pergolas-umbrellas", name: "برجولات وشماسي", icon: "☂️",
+    desc: "استرخاء لحديقتك وبلكونتك",
+  },
+  {
+    id: "pergolas-umbrellas",
+    name: "برجولات وشماسي",
+    icon: "☂️",
     img: "assets/img/categories/shade.webp",
-    desc: "ظل أنيق يقاوم العوامل الجوية" }
+    desc: "ظل أنيق يقاوم العوامل الجوية",
+  },
 ];
 
 /* ============================================================
@@ -132,11 +150,14 @@ const DEFAULT_CATEGORIES = [
    ============================================================ */
 const DEFAULT_PRODUCTS = [
   {
-    id: "MR-IRON-01", cat: "iron-sets", featured: true,
+    id: "MR-IRON-01",
+    cat: "iron-sets",
+    featured: true,
     name: "طقم حديد علب 4 * 8",
     short: "كنبة 3 مقعد + كنبة 2 مقعد + 2 كرسي + ترابيزة",
     img: "assets/img/products/اطقم حديد علب/meatel 5.webp",
-    price: 26000, oldPrice: 32000,
+    price: 26000,
+    oldPrice: 32000,
     components: ["كنبة 3 مقعد", "كنبة 2 مقعد", "2 كرسي", "ترابيزة"],
     specs: [
       "حديد علب معالج مدهون فرن إلكتروستاتك لأعلى جودة ومتانة",
@@ -147,11 +168,13 @@ const DEFAULT_PRODUCTS = [
     cushions: true,
   },
   {
-    id: "MR-IRON-02", cat: "iron-sets",
+    id: "MR-IRON-02",
+    cat: "iron-sets",
     name: "طقم حديد مودرن (كنبة 2 مقعد)",
     short: "كنبة 2 مقعد + 2 كرسي + ترابيزة",
     img: "assets/img/products/اطقم حديد علب/meatel 6.webp",
-    price: 13500, oldPrice: 15000,
+    price: 13500,
+    oldPrice: 15000,
     components: ["كنبة 2 مقعد", "2 كرسي", "ترابيزة"],
     specs: [
       "حديد علب معالج",
@@ -163,11 +186,13 @@ const DEFAULT_PRODUCTS = [
     cushions: true,
   },
   {
-    id: "MR-IRON-03", cat: "iron-sets",
+    id: "MR-IRON-03",
+    cat: "iron-sets",
     name: "طقم حديد مودرن (3 مقعد + 2 مقعد + 2 بف)",
     short: "كنبة 3 مقعد + كنبة 2 مقعد + 2 كرسي + ترابيزة + 2 بف",
     img: "assets/img/products/اطقم حديد علب/meatel 7.webp",
-    price: 22500, oldPrice: 25000,
+    price: 22500,
+    oldPrice: 25000,
     components: ["كنبة 3 مقعد", "كنبة 2 مقعد", "2 كرسي", "ترابيزة", "2 بف"],
     specs: [
       "حديد علب معالج",
@@ -178,11 +203,14 @@ const DEFAULT_PRODUCTS = [
     cushions: true,
   },
   {
-    id: "MR-IRON-04", cat: "iron-sets", featured: true,
+    id: "MR-IRON-04",
+    cat: "iron-sets",
+    featured: true,
     name: "طقم ديزاين",
     short: "4 كراسي + ترابيزة",
     img: "assets/img/products/اطقم حديد علب/meatel 8.webp",
-    price: 5500, oldPrice: 7000,
+    price: 5500,
+    oldPrice: 7000,
     components: ["4 كراسي", "ترابيزة"],
     specs: [
       "حديد معالج مقاوم للصدأ",
@@ -195,11 +223,14 @@ const DEFAULT_PRODUCTS = [
     cushions: true,
   },
   {
-    id: "MR-IRON-05", cat: "iron-sets", featured: true,
+    id: "MR-IRON-05",
+    cat: "iron-sets",
+    featured: true,
     name: "سفرة مودرن 10 كراسي",
     short: "10 كراسي + ترابيزة",
     img: "assets/img/products/اطقم حديد علب/meatel 1.webp",
-    price: 32000, oldPrice: 39000,
+    price: 32000,
+    oldPrice: 39000,
     components: ["10 كراسي", "ترابيزة"],
     specs: [
       "حديد علب معالج",
@@ -210,39 +241,37 @@ const DEFAULT_PRODUCTS = [
     cushions: true,
   },
   {
-    id: "MR-IRON-06", cat: "iron-sets",
+    id: "MR-IRON-06",
+    cat: "iron-sets",
     name: "طقم حديد مودرن (كنبة 3 مقعد)",
     short: "كنبة 3 مقعد + 2 كرسي + ترابيزة",
     img: "assets/img/products/اطقم حديد علب/meatel 2.webp",
-    price: 15500, oldPrice: 19000,
+    price: 15500,
+    oldPrice: 19000,
     components: ["كنبة 3 مقعد", "2 كرسي", "ترابيزة"],
-    specs: [
-      "حديد علب معالج",
-      "دهان فرن إلكتروستاتك",
-      "كوشن مقاوم للماء",
-    ],
+    specs: ["حديد علب معالج", "دهان فرن إلكتروستاتك", "كوشن مقاوم للماء"],
     cushions: true,
   },
   {
-    id: "MR-IRON-07", cat: "iron-sets",
+    id: "MR-IRON-07",
+    cat: "iron-sets",
     name: "طقم حديد مودرن (3 مقعد + 2 مقعد + 2 ترابيزة)",
     short: "كنبة 3 مقعد + كنبة 2 مقعد + 2 كرسي + 2 ترابيزة + بف",
     img: "assets/img/products/اطقم حديد علب/meatel 3.webp",
-    price: 22000, oldPrice: 28000,
+    price: 22000,
+    oldPrice: 28000,
     components: ["كنبة 3 مقعد", "كنبة 2 مقعد", "2 كرسي", "2 ترابيزة", "بف"],
-    specs: [
-      "حديد علب معالج",
-      "دهان فرن إلكتروستاتك",
-      "تصميم عصري ومتانة تدوم",
-    ],
+    specs: ["حديد علب معالج", "دهان فرن إلكتروستاتك", "تصميم عصري ومتانة تدوم"],
     cushions: true,
   },
   {
-    id: "MR-IRON-08", cat: "iron-sets",
+    id: "MR-IRON-08",
+    cat: "iron-sets",
     name: "طقم VIB",
     short: "2 كرسي + كنبة 2 مقعد + كنبة 3 مقعد + ترابيزة + 2 بف",
     img: "assets/img/products/اطقم حديد علب/meatel 4.webp",
-    price: 22000, oldPrice: 28000,
+    price: 22000,
+    oldPrice: 28000,
     components: ["2 كرسي", "كنبة 2 مقعد", "كنبة 3 مقعد", "ترابيزة", "2 بف"],
     specs: [
       "حديد معالج مطلي فرن إلكتروستاتك",
@@ -254,11 +283,14 @@ const DEFAULT_PRODUCTS = [
     cushions: true,
   },
   {
-    id: "MR-DAB-01", cat: "dabar", featured: true,
+    id: "MR-DAB-01",
+    cat: "dabar",
+    featured: true,
     name: "طقم دبار 4 كراسي",
     short: "4 كراسي + ترابيزة",
     img: "assets/img/products/دبار/دبار 1.webp",
-    price: 6000, oldPrice: 7800,
+    price: 6000,
+    oldPrice: 7800,
     components: ["4 كراسي", "ترابيزة"],
     specs: [
       "دبار بيور مجدول يدوياً",
@@ -272,11 +304,13 @@ const DEFAULT_PRODUCTS = [
     cushions: true,
   },
   {
-    id: "MR-DAB-02", cat: "dabar",
+    id: "MR-DAB-02",
+    cat: "dabar",
     name: "سفرة 6 كراسي دبار",
     short: "6 كراسي + ترابيزة زجاج",
     img: "assets/img/products/دبار/دبار 2.webp",
-    price: 9800, oldPrice: null,
+    price: 9800,
+    oldPrice: null,
     components: ["6 كراسي", "ترابيزة زجاج"],
     specs: [
       "حديد معالج مدهون فرن إلكتروستاتك",
@@ -289,14 +323,19 @@ const DEFAULT_PRODUCTS = [
     cushions: true,
   },
   {
-    id: "MR-DAB-03", cat: "dabar",
+    id: "MR-DAB-03",
+    cat: "dabar",
     name: "طقم دبار",
     short: "طقم 4 كراسي + ترابيزة أو طقم كنبة 2 مقعد + 2 كرسي + ترابيزة",
     img: "assets/img/products/دبار/دبار 3.webp",
-    price: 5500, oldPrice: 7500,
+    price: 5500,
+    oldPrice: 7500,
     variants: [
       { name: "طقم 4 كراسي + ترابيزة", components: ["4 كراسي", "ترابيزة"] },
-      { name: "طقم كنبة 2 مقعد + 2 كرسي + ترابيزة", components: ["كنبة 2 مقعد", "2 كرسي", "ترابيزة"] },
+      {
+        name: "طقم كنبة 2 مقعد + 2 كرسي + ترابيزة",
+        components: ["كنبة 2 مقعد", "2 كرسي", "ترابيزة"],
+      },
     ],
     specs: [
       "هيكل معدني قوي - ثبات ومتانة تدوم طويلاً",
@@ -309,11 +348,13 @@ const DEFAULT_PRODUCTS = [
     warranty: "ضمان جودة 100%",
   },
   {
-    id: "MR-DAB-04", cat: "dabar",
+    id: "MR-DAB-04",
+    cat: "dabar",
     name: "طقم دبار دبل",
     short: "كنبة 2 مقعد + 2 كرسي + ترابيزة",
     img: "assets/img/products/دبار/دبار 4.webp",
-    price: 9500, oldPrice: 12000,
+    price: 9500,
+    oldPrice: 12000,
     components: ["كنبة 2 مقعد", "2 كرسي", "ترابيزة"],
     specs: [
       "خامات عالية الجودة",
@@ -325,25 +366,26 @@ const DEFAULT_PRODUCTS = [
     warranty: "ضمان سنتين",
   },
   {
-    id: "MR-RAT-01", cat: "ratan",
+    id: "MR-RAT-01",
+    cat: "ratan",
     name: "طقم 2 كرسي + ترابيزة (شريط بالشلت)",
     short: "2 كرسي + ترابيزة",
     img: "assets/img/products/رتان/رتان 1.webp",
-    price: 3500, oldPrice: 4200,
+    price: 3500,
+    oldPrice: 4200,
     components: ["2 كرسي", "ترابيزة"],
-    specs: [
-      "شريط بالشلت",
-      "وتر بروف (مقاوم للماء)",
-      "جودة ومتانة",
-    ],
+    specs: ["شريط بالشلت", "وتر بروف (مقاوم للماء)", "جودة ومتانة"],
     cushions: true,
   },
   {
-    id: "MR-RAT-02", cat: "ratan", featured: true,
+    id: "MR-RAT-02",
+    cat: "ratan",
+    featured: true,
     name: "طقم ديزاين مدينتي",
     short: "كنبة 3 مقعد + 3 كراسي + ترابيزة + كرسي هزاز",
     img: "assets/img/products/رتان/رتان 2.webp",
-    price: 10000, oldPrice: 13000,
+    price: 10000,
+    oldPrice: 13000,
     components: ["كنبة 3 مقعد", "3 كراسي", "ترابيزة", "كرسي هزاز"],
     specs: [
       "حديد علب معالج مدهون فرن إلكتروستاتك",
@@ -357,11 +399,13 @@ const DEFAULT_PRODUCTS = [
     warranty: "ضمان على الهيكل والدهان",
   },
   {
-    id: "MR-RAT-03", cat: "ratan",
+    id: "MR-RAT-03",
+    cat: "ratan",
     name: "شنطة سوق",
     short: "شنطة سوق بعجل",
     img: "assets/img/products/رتان/رتان 3.webp",
-    price: 2000, oldPrice: null,
+    price: 2000,
+    oldPrice: null,
     components: ["شنطة سوق بعجل"],
     specs: [
       "حديد معالج مدهون فرن إلكتروستاتك",
@@ -374,11 +418,13 @@ const DEFAULT_PRODUCTS = [
     warranty: "ضمان جودة",
   },
   {
-    id: "MR-RAT-04", cat: "ratan",
+    id: "MR-RAT-04",
+    cat: "ratan",
     name: "كرسي بار",
     short: "كرسي بار + وسادة",
     img: "assets/img/products/رتان/رتان 4.webp",
-    price: 1550, oldPrice: 2000,
+    price: 1550,
+    oldPrice: 2000,
     components: ["كرسي بار", "وسادة"],
     specs: [
       "هيكل معدني قوي - حديد معالج مدهون فرن إلكتروستاتك مقاوم للصدأ",
@@ -386,18 +432,28 @@ const DEFAULT_PRODUCTS = [
       "مقاوم للماء والشمس - شريط معالج ضد الماء والشمس والرطوبة",
       "وسادة مريحة - قماش عالي الجودة مقاوم للعوامل الخارجية",
     ],
-    dims: [{ label: "الارتفاع", value: "100 سم" }, { label: "ارتفاع الجلسة", value: "70 سم" }, { label: "العرض", value: "55 سم" }, { label: "العمق", value: "45 سم" }],
+    dims: [
+      { label: "الارتفاع", value: "100 سم" },
+      { label: "ارتفاع الجلسة", value: "70 سم" },
+      { label: "العرض", value: "55 سم" },
+      { label: "العمق", value: "45 سم" },
+    ],
     cushions: true,
   },
   {
-    id: "MR-RAT-05", cat: "ratan",
+    id: "MR-RAT-05",
+    cat: "ratan",
     name: "طقم شريط",
     short: "طقم 4 كراسي + ترابيزة أو طقم كنبة 2 مقعد + 2 كرسي + ترابيزة",
     img: "assets/img/products/رتان/رتان 5.webp",
-    price: 5550, oldPrice: 7500,
+    price: 5550,
+    oldPrice: 7500,
     variants: [
       { name: "طقم 4 كراسي + ترابيزة", components: ["4 كراسي", "ترابيزة"] },
-      { name: "طقم كنبة 2 مقعد + 2 كرسي + ترابيزة", components: ["كنبة 2 مقعد", "2 كرسي", "ترابيزة"] },
+      {
+        name: "طقم كنبة 2 مقعد + 2 كرسي + ترابيزة",
+        components: ["كنبة 2 مقعد", "2 كرسي", "ترابيزة"],
+      },
     ],
     specs: [
       "هيكل معدني قوي - حديد معالج مدهون فرن إلكتروستاتك مقاوم للصدأ",
@@ -409,11 +465,14 @@ const DEFAULT_PRODUCTS = [
     warranty: "ضمان جودة 100%",
   },
   {
-    id: "MR-RAT-06", cat: "ratan", featured: true,
+    id: "MR-RAT-06",
+    cat: "ratan",
+    featured: true,
     name: "طقم VIB رتان",
     short: "4 كراسي + فوتية 2 مقعد + كنبة 3 مقعد + 2 ترابيزة",
     img: "assets/img/products/رتان/رتان 7.webp",
-    price: 20000, oldPrice: 25000,
+    price: 20000,
+    oldPrice: 25000,
     components: ["4 كراسي", "فوتية 2 مقعد", "كنبة 3 مقعد", "2 ترابيزة"],
     specs: [
       "حديد معالج مطلي فرن إلكتروستاتك",
@@ -426,11 +485,13 @@ const DEFAULT_PRODUCTS = [
     warranty: "ضمان طويل الأمد",
   },
   {
-    id: "MR-RAT-07", cat: "ratan",
+    id: "MR-RAT-07",
+    cat: "ratan",
     name: "سفرة مودرن 3 يد",
     short: "6 كراسي + ترابيزة",
     img: "assets/img/products/رتان/رتان 9.webp",
-    price: 8500, oldPrice: 10000,
+    price: 8500,
+    oldPrice: 10000,
     components: ["6 كراسي", "ترابيزة"],
     specs: [
       "برتان بيور مجدول يدوياً",
@@ -438,17 +499,22 @@ const DEFAULT_PRODUCTS = [
       "حديد معالج مدهون فرن إلكتروستاتك",
       "متاح تغيير أي لون",
     ],
-    dims: [{ label: "الترابيزة", value: "120 × 70 سم" }, { label: "عمق الكرسي", value: "50 سم" }],
+    dims: [
+      { label: "الترابيزة", value: "120 × 70 سم" },
+      { label: "عمق الكرسي", value: "50 سم" },
+    ],
     weaveColors: ["بيچ فاتح", "بني فاتح", "بني غامق", "رمادي", "أبيض", "أسود"],
     colorsNote: "متاح تغيير أي لون",
     cushions: true,
   },
   {
-    id: "MR-SWG-01", cat: "swings-rockers",
+    id: "MR-SWG-01",
+    cat: "swings-rockers",
     name: "كرسي عين الشمس",
     short: "كرسي عين الشمس + وسادة",
     img: "assets/img/products/مراجيح وكراسي هزاز/مراجيح وكراسي 1.webp",
-    price: 5000, oldPrice: 6800,
+    price: 5000,
+    oldPrice: 6800,
     components: ["كرسي عين الشمس", "وسادة"],
     specs: [
       "حديد علب معالج ومدهون فرن إلكتروستاتك",
@@ -459,11 +525,13 @@ const DEFAULT_PRODUCTS = [
     cushions: true,
   },
   {
-    id: "MR-SWG-02", cat: "swings-rockers",
+    id: "MR-SWG-02",
+    cat: "swings-rockers",
     name: "كرسي هزاز + بف",
     short: "كرسي هزاز + بف (مسند قدم)",
     img: "assets/img/products/مراجيح وكراسي هزاز/مراجيح وكراسي 2.webp",
-    price: 4200, oldPrice: null,
+    price: 4200,
+    oldPrice: null,
     components: ["كرسي هزاز", "بف (مسند قدم)"],
     specs: [
       "خامة عالية الجودة مقاومة للعوامل الخارجية",
@@ -475,11 +543,14 @@ const DEFAULT_PRODUCTS = [
     cushions: true,
   },
   {
-    id: "MR-SWG-03", cat: "swings-rockers", featured: true,
+    id: "MR-SWG-03",
+    cat: "swings-rockers",
+    featured: true,
     name: "هاموك رتان",
     short: "هاموك واحد فرد أو هاموك اتنين فرد",
     img: "assets/img/products/مراجيح وكراسي هزاز/مراجيح وكراسي 3.webp",
-    price: 3200, oldPrice: null,
+    price: 3200,
+    oldPrice: null,
     variants: [
       { name: "هاموك واحد فرد", price: 3200, loadCapacity: "250 كيلو" },
       { name: "هاموك اتنين فرد", price: 4200, loadCapacity: "500 كيلو" },
@@ -493,11 +564,13 @@ const DEFAULT_PRODUCTS = [
     cushions: true,
   },
   {
-    id: "MR-PRG-01", cat: "pergolas-umbrellas",
+    id: "MR-PRG-01",
+    cat: "pergolas-umbrellas",
     name: "شمسية 3 أو 4 متر",
     short: "شمسية + قاعدة رخام مزودة بعجل وفرامل",
     img: "assets/img/products/برجولات وشماسي/برجولات وشماسي 2.webp",
-    price: 4000, oldPrice: 5000,
+    price: 4000,
+    oldPrice: 5000,
     components: ["شمسية", "قاعدة رخام مزودة بعجل وفرامل"],
     variants: [
       { name: "شمسية 3 متر", price: 4000, oldPrice: 5000 },
@@ -513,11 +586,14 @@ const DEFAULT_PRODUCTS = [
     cushions: true,
   },
   {
-    id: "MR-PRG-02", cat: "pergolas-umbrellas", featured: true,
+    id: "MR-PRG-02",
+    cat: "pergolas-umbrellas",
+    featured: true,
     name: "برجولة راتان",
     short: "برجولة راتان بسقف + مرجيحة 3 مقاعد",
     img: "assets/img/products/برجولات وشماسي/برجولات وشماسي 1.webp",
-    price: 9000, oldPrice: 11000,
+    price: 9000,
+    oldPrice: 11000,
     components: ["برجولة راتان بسقف", "مرجيحة 3 مقاعد"],
     specs: [
       "معالج ضد الماء والشمس",
@@ -526,5 +602,5 @@ const DEFAULT_PRODUCTS = [
     ],
     cushions: true,
     loadCapacity: "تتحمل حتى 500 كيلو",
-  }
+  },
 ];

@@ -13,7 +13,7 @@
 
 <div class="wrap">
   <div class="crumbs" id="crumbs"></div>
-  <div id="detail"></div>
+  <div id="detail"><div class="loading"><span class="sp"></span>جارٍ التحميل…</div></div>
 </div>
 
 <section style="padding-top:10px" id="relatedSec">
@@ -23,11 +23,16 @@
   </div>
 </section>
 
+<script src="assets/js/config.js"></script>
 <script src="assets/js/data.js"></script>
+<script src="assets/js/sb.js"></script>
 <script src="assets/js/app.js"></script>
 <script>
   renderHeader("products");
+  renderFooter();
 
+  /* بيانات المنتج بتيجي من قاعدة البيانات — نستنى تحميلها الأول */
+  storeReady(() => {
   const id = new URLSearchParams(location.search).get("id");
   const p  = getProduct(id);
 
@@ -199,12 +204,12 @@
     else document.getElementById("relatedSec").style.display = "none";
   }
 
-  function changeQty(d) {
+  /* بتتنادى من onclick في الـHTML فلازم تكون على window */
+  window.changeQty = (d) => {
     qty = Math.max(1, qty + d);
     document.getElementById("q").textContent = qty;
-  }
-
-  renderFooter();
+  };
+  });
 </script>
 </body>
 </html>

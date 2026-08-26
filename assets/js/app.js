@@ -24,42 +24,64 @@ const esc = (s) =>
   );
 
 /* ============================================================
-   قاعدة البيانات
+   الكتالوج
    ------------------------------------------------------------
-   الافتراضي جاي من data.js. لوحة التحكم (admin.html) بتحفظ نسخة
-   معدّلة في المتصفح تحت المفتاح ده، والموقع بيقراها لو موجودة.
+   المصدر الأساسي = جداول Supabase (لو config.js متظبط)، فأي تعديل
+   من لوحة التحكم بيظهر لكل الزوّار على طول.
+
+   لو الاتصال فشل بنرجع لآخر نسخة متخزنة في المتصفح، وبعدين لنسخة
+   data.js المرفوعة مع الموقع — عشان الصفحة ما تفضلش فاضية أبدًا.
    ============================================================ */
-const DB_KEY = "mr_db_v1";
+const CATALOG_CACHE = "mr_catalog_v1";
 
 let CATEGORIES = DEFAULT_CATEGORIES;
 let PRODUCTS = DEFAULT_PRODUCTS;
+/** من فين اتحمّل الكتالوج: supabase | cache | data.js */
+let CATALOG_SOURCE = "data.js";
 
-function readDB() {
+function readCatalogCache() {
   try {
-    const raw = localStorage.getItem(DB_KEY);
-    if (!raw) return null;
-    const db = JSON.parse(raw);
-    if (!Array.isArray(db.categories) || !Array.isArray(db.products))
+    const c = JSON.parse(localStorage.getItem(CATALOG_CACHE));
+    if (!c || !Array.isArray(c.categories) || !Array.isArray(c.products))
       return null;
-    return db;
+    if (!c.categories.length || !c.products.length) return null;
+    return c;
   } catch (e) {
     return null;
   }
 }
-function writeDB(db) {
-  localStorage.setItem(DB_KEY, JSON.stringify(db));
-}
-function resetDB() {
-  localStorage.removeItem(DB_KEY);
+
+async function loadCatalog() {
+  if (!SB.configured) return;
+  try {
+    const [cats, prods] = await Promise.all([SB.categories(), SB.products()]);
+    /* قاعدة فاضية (لسه ما اتعملش استيراد) — نسيب data.js شغّالة */
+    if (cats.length) CATEGORIES = cats;
+    if (prods.length) PRODUCTS = prods;
+    if (cats.length && prods.length) {
+      CATALOG_SOURCE = "supabase";
+      localStorage.setItem(
+        CATALOG_CACHE,
+        JSON.stringify({ categories: CATEGORIES, products: PRODUCTS }),
+      );
+    }
+  } catch (err) {
+    const c = readCatalogCache();
+    if (c) {
+      CATEGORIES = c.categories;
+      PRODUCTS = c.products;
+      CATALOG_SOURCE = "cache";
+    }
+    console.warn("[Madinty Ratan] تعذّر تحميل الكتالوج من Supabase:", err.message);
+  }
+  updateCartCount();
 }
 
-(function loadDB() {
-  const db = readDB();
-  if (db) {
-    CATEGORIES = db.categories;
-    PRODUCTS = db.products;
-  }
-})();
+const catalogReady = loadCatalog();
+
+/** شغّل الكود بعد ما الكتالوج يجهز — كل صفحة بتعرض منتجات بتستخدمها */
+const storeReady = (fn) =>
+  catalogReady.then(fn).catch((e) => console.error(e));
 
 const catName = (id) => (CATEGORIES.find((c) => c.id === id) || {}).name || "";
 const getProduct = (id) => PRODUCTS.find((p) => p.id === id);
@@ -155,7 +177,10 @@ function shippingLabel(gov) {
 }
 
 /* ============================================================
-   الطلبات (localStorage) — مصدر بيانات لوحة التحكم
+   الطلبات
+   ------------------------------------------------------------
+   الطلب بيتبعت لـ Supabase عشان يظهر في لوحة التحكم، وبيتحفظ كمان
+   نسخة محلية في متصفح العميل كنسخة احتياطية لو النت فصل.
    ============================================================ */
 const ORDERS_KEY = "mr_orders_v1";
 const ORDER_STATUSES = [
@@ -180,9 +205,32 @@ function saveOrders(list) {
 function addOrder(order) {
   const list = getOrders();
   list.unshift(order);
-  saveOrders(list);
+  saveOrders(list.slice(0, 50));
   return order;
 }
+
+/**
+ * بيبعت الطلب لقاعدة البيانات عشان يوصل لوحة التحكم.
+ * مش بنوقف العميل لو فشل — الرسالة بتوصل على الواتساب برضه،
+ * وصاحب المتجر يقدر يضيفها من «لصق رسالة واتساب».
+ * @returns {Promise<boolean>}
+ */
+async function sendOrder(order, source = "web") {
+  if (!SB.configured) return false;
+  try {
+    await SB.addOrder(order, source);
+    return true;
+  } catch (err) {
+    console.warn("[Madinty Ratan] الطلب ما اتسجّلش في القاعدة:", err.message);
+    return false;
+  }
+}
+
+/** رقم طلب لا يتكرر: 6 أرقام من الوقت + رقمين عشوائيين */
+const newOrderNo = () =>
+  "MR-" +
+  Date.now().toString().slice(-6) +
+  Math.floor(10 + Math.random() * 90);
 
 /** يبني كائن الطلب من العربة + بيانات العميل */
 function buildOrder(customer) {
@@ -201,7 +249,7 @@ function buildOrder(customer) {
   const subtotal = items.reduce((s, i) => s + i.price * i.qty, 0);
   const ship = shippingCost(customer.gov);
   return {
-    no: "MR-" + Date.now().toString().slice(-6),
+    no: newOrderNo(),
     at: new Date().toISOString(),
     status: ORDER_STATUSES[0],
     customer,
