@@ -51,10 +51,16 @@ function readCatalogCache() {
   }
 }
 
+/** أقصى انتظار للكتالوج قبل ما نعرض النسخة المتخزنة (بالملي ثانية) */
+const CATALOG_TIMEOUT = 6000;
+
 async function loadCatalog() {
   if (!SB.configured) return;
   try {
-    const [cats, prods] = await Promise.all([SB.categories(), SB.products()]);
+    const [cats, prods] = await Promise.all([
+      SB.categories(CATALOG_TIMEOUT),
+      SB.products(CATALOG_TIMEOUT),
+    ]);
     /* قاعدة فاضية (لسه ما اتعملش استيراد) — نسيب data.js شغّالة */
     if (cats.length) CATEGORIES = cats;
     if (prods.length) PRODUCTS = prods;

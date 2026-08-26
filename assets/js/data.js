@@ -9,9 +9,9 @@
 const STORE = {
   name: "Madinty Ratan",
   tagline: "أثاث خارجي فاخر — حديد علب · رتان · دبار",
-  whatsapp: "201068104986", // رقم استقبال الطلبات (بصيغة دولية بدون +)
-  whatsappDisplay: "01068104986",
-  phone: "01068104986",
+  whatsapp: "201154649393", // رقم استقبال الطلبات (بصيغة دولية بدون +)
+  whatsappDisplay: "01154649393",
+  phone: "01154649393",
   email: "gamal236emad@gmail.com",
   factory: "أشمون — محافظة المنوفية",
   freeShipping: "التوصيل مجانًا داخل القاهرة والجيزة",

@@ -63,6 +63,8 @@ const SB = (() => {
     try {
       return await fetch(url, opts);
     } catch (e) {
+      if (e.name === "TimeoutError" || e.name === "AbortError")
+        throw new Error("Supabase أخد وقت طويل ومردّش");
       throw new Error("تعذّر الاتصال بـ Supabase — راجع النت والقيم في config.js");
     }
   }
@@ -105,7 +107,16 @@ const SB = (() => {
    * نداء على PostgREST.
    * @param {string} path مثال: "products?select=*&order=sort.asc"
    */
-  async function rest(path, { method = "GET", body, prefer } = {}) {
+  /** مهلة للطلب — لو Supabase بطيء أو واقف ما نسيبش الزائر مستني */
+  const timeoutSignal = (ms) => {
+    try {
+      return ms ? AbortSignal.timeout(ms) : undefined;
+    } catch (e) {
+      return undefined; /* متصفح قديم */
+    }
+  };
+
+  async function rest(path, { method = "GET", body, prefer, keepalive, timeout } = {}) {
     if (!configured) throw new Error("Supabase مش متظبط في assets/js/config.js");
     const jwt = (await token()) || KEY;
     const res = await go(`${URL_}/rest/v1/${path}`, {
@@ -118,6 +129,9 @@ const SB = (() => {
         ...(prefer ? { Prefer: prefer } : {}),
       },
       body: body === undefined ? undefined : JSON.stringify(body),
+      /* keepalive بيخلّي الطلب يكمّل حتى لو العميل قفل التبويب بعد ما فتح الواتساب */
+      keepalive: !!keepalive,
+      signal: timeoutSignal(timeout),
     });
     if (!res.ok) throw await readError(res);
     if (res.status === 204) return null;
@@ -256,12 +270,12 @@ const SB = (() => {
     },
 
     /* ---------- الكتالوج ---------- */
-    async categories() {
-      const rows = await rest("categories?select=*&order=sort.asc,name.asc");
+    async categories(timeout) {
+      const rows = await rest("categories?select=*&order=sort.asc,name.asc", { timeout });
       return rows.map(rowToCat);
     },
-    async products() {
-      const rows = await rest("products?select=*&order=sort.asc,name.asc");
+    async products(timeout) {
+      const rows = await rest("products?select=*&order=sort.asc,name.asc", { timeout });
       return rows.map(rowToProduct);
     },
     saveCat: (c, sort) =>
@@ -325,6 +339,7 @@ const SB = (() => {
         method: "POST",
         body: [orderToRow(o, source)],
         prefer: "return=minimal",
+        keepalive: true,
       }),
     setOrderStatus: (no, status) =>
       rest(`orders?no=eq.${encodeURIComponent(no)}`, {
