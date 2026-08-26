@@ -15,5 +15,6 @@
    (بس لوحة التحكم مش هتشتغل).
    ============================================================ */
 
-const SUPABASE_URL = "";
-const SUPABASE_ANON_KEY = "";
+const SUPABASE_URL = "https://rmsospceilwkdsknkapw.supabase.co";
+const SUPABASE_ANON_KEY =
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJtc29zcGNlaWx3a2Rza25rYXB3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc3NTc5OTcsImV4cCI6MjEwMzMzMzk5N30.TOKB07fXjLHrFeNLxSn2WXYW6ZPHUStI086Mbe3aqwA";
