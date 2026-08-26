@@ -103,10 +103,6 @@ const SB = (() => {
     }
   }
 
-  /**
-   * نداء على PostgREST.
-   * @param {string} path مثال: "products?select=*&order=sort.asc"
-   */
   /** مهلة للطلب — لو Supabase بطيء أو واقف ما نسيبش الزائر مستني */
   const timeoutSignal = (ms) => {
     try {
@@ -116,9 +112,18 @@ const SB = (() => {
     }
   };
 
+  /**
+   * نداء على PostgREST.
+   * @param {string} path مثال: "products?select=*&order=sort.asc"
+   */
   async function rest(path, { method = "GET", body, prefer, keepalive, timeout } = {}) {
     if (!configured) throw new Error("Supabase مش متظبط في assets/js/config.js");
+    /* لو كانت فيه جلسة وانتهت، منكملش بمفتاح الزائر — الكتابة هتترفض
+       برسالة RLS مش مفهومة، فالأوضح نقول إن الجلسة خلصت */
+    const hadSession = !!session();
     const jwt = (await token()) || KEY;
+    if (hadSession && jwt === KEY)
+      throw new Error("الجلسة انتهت — اعمل تسجيل خروج ودخول تاني");
     const res = await go(`${URL_}/rest/v1/${path}`, {
       method,
       headers: {
