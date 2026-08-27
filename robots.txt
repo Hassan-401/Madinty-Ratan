@@ -1,8 +1,7 @@
 User-agent: *
 Allow: /
 
-Disallow: /admin.html
 Disallow: /admin
-Disallow: /cart.html
+Disallow: /cart
 
 Sitemap: https://madinty-ratan.vercel.app/sitemap.xml

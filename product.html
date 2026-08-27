@@ -6,7 +6,7 @@
 <title>تفاصيل المنتج — Madinty Ratan</title>
 
 <meta name="description" content="مواصفات وأسعار منتجات Madinty Ratan — خامات معالجة ضد الماء والشمس، وضمان فعلي يوصل لـ10 سنوات." />
-<link rel="canonical" href="https://madinty-ratan.vercel.app/product.html" />
+<link rel="canonical" href="https://madinty-ratan.vercel.app/product" />
 
 <link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml" />
 <link rel="alternate icon" href="assets/img/icon-32.png" />
@@ -18,7 +18,7 @@
 <meta property="og:locale" content="ar_EG" />
 <meta property="og:title" content="تفاصيل المنتج — Madinty Ratan" />
 <meta property="og:description" content="مواصفات وأسعار منتجات Madinty Ratan — خامات معالجة ضد الماء والشمس، وضمان فعلي يوصل لـ10 سنوات." />
-<meta property="og:url" content="https://madinty-ratan.vercel.app/product.html" />
+<meta property="og:url" content="https://madinty-ratan.vercel.app/product" />
 <meta property="og:image" content="https://madinty-ratan.vercel.app/assets/img/og.jpg" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
@@ -67,13 +67,13 @@
       <div class="empty">
         <div class="ic">😕</div>
         <p>المنتج غير موجود.</p>
-        <a class="btn btn-dark" href="products.html">العودة للمنتجات</a>
+        <a class="btn btn-dark" href="/products">العودة للمنتجات</a>
       </div>`;
     document.getElementById("relatedSec").style.display = "none";
   } else {
     document.title = p.name + " — Madinty Ratan";
     document.getElementById("crumbs").innerHTML =
-      `<a href="index.html">الرئيسية</a> / <a href="products.html?cat=${encodeURIComponent(p.cat)}">${esc(catName(p.cat))}</a> / ${esc(p.name)}`;
+      `<a href="/">الرئيسية</a> / <a href="/products?cat=${encodeURIComponent(p.cat)}">${esc(catName(p.cat))}</a> / ${esc(p.name)}`;
 
     /* --- كتل اختيارية حسب بيانات المنتج --- */
     const variantsBlock = !(p.variants && p.variants.length) ? "" : `
@@ -217,7 +217,7 @@
     document.getElementById("buyBtn").addEventListener("click", () => {
       if (!requireColor()) return;
       addToCart(p.id, qty, variant, color);
-      location.href = "cart.html";
+      location.href = "/cart";
     });
 
     const rel = PRODUCTS.filter(x => x.cat === p.cat && x.id !== p.id).slice(0, 4);

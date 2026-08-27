@@ -57,9 +57,9 @@
         <h1>الصفحة دي مش موجودة</h1>
         <p>يمكن الرابط اتغيّر أو المنتج اتشال من المتجر.</p>
         <div class="links">
-          <a class="btn btn-gold" href="/products.html">تصفّح المنتجات</a>
-          <a class="btn btn-line" href="/index.html">الصفحة الرئيسية</a>
-          <a class="btn btn-line" href="/contact.html">تواصل معنا</a>
+          <a class="btn btn-gold" href="/products">تصفّح المنتجات</a>
+          <a class="btn btn-line" href="/">الصفحة الرئيسية</a>
+          <a class="btn btn-line" href="/contact">تواصل معنا</a>
         </div>
       </div>
     </div>
@@ -69,14 +69,10 @@
     <script src="/assets/js/sb.js"></script>
     <script src="/assets/js/app.js"></script>
     <script>
-      /* الهيدر والفوتر بيتبنوا بروابط نسبية — نصلّحها عشان الصفحة دي
-         بتتعرض على أي مسار (مثلًا /haga/mesh-mawgoda) */
+      /* روابط الهيدر والفوتر كلها مطلقة، فالصفحة دي تشتغل صح حتى لو
+         اتعرضت على مسار غريب زي /haga/mesh-mawgoda */
       renderHeader("");
       renderFooter();
-      document.querySelectorAll('header.site a[href], footer.site a[href]').forEach((a) => {
-        const h = a.getAttribute("href");
-        if (h && !/^(https?:|mailto:|tel:|\/|#)/.test(h)) a.setAttribute("href", "/" + h);
-      });
     </script>
   </body>
 </html>

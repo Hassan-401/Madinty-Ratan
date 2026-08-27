@@ -636,7 +636,7 @@ function renderProducts() {
             <td>${stockPill(p)}</td>
             <td>${p.featured ? "⭐" : "–"}</td>
             <td class="actions">
-              <a class="ibtn" href="product.html?id=${encodeURIComponent(p.id)}" target="_blank" rel="noopener" title="عرض">👁</a>
+              <a class="ibtn" href="/product?id=${encodeURIComponent(p.id)}" target="_blank" rel="noopener" title="عرض">👁</a>
               <button class="ibtn" data-edit-p="${esc(p.id)}" title="تعديل">✏️</button>
               <button class="ibtn del" data-del-p="${esc(p.id)}" title="حذف">🗑</button>
             </td>
@@ -880,7 +880,7 @@ function renderCats() {
             <td class="muted">${esc(c.desc || "")}</td>
             <td><span class="pill">${PRODUCTS.filter((p) => p.cat === c.id).length}</span></td>
             <td class="actions">
-              <a class="ibtn" href="products.html?cat=${encodeURIComponent(c.id)}" target="_blank" rel="noopener" title="عرض">👁</a>
+              <a class="ibtn" href="/products?cat=${encodeURIComponent(c.id)}" target="_blank" rel="noopener" title="عرض">👁</a>
               <button class="ibtn" data-edit-c="${esc(c.id)}" title="تعديل">✏️</button>
               <button class="ibtn del" data-del-c="${esc(c.id)}" title="حذف">🗑</button>
             </td>

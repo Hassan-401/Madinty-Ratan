@@ -324,10 +324,10 @@ const ICONS = {
 };
 
 const NAV_LINKS = [
-  ["index.html", "الرئيسية", "home"],
-  ["products.html", "جميع المنتجات", "products"],
-  ["about.html", "من نحن", "about"],
-  ["contact.html", "تواصل معنا", "contact"],
+  ["/", "الرئيسية", "home"],
+  ["/products", "جميع المنتجات", "products"],
+  ["/about", "من نحن", "about"],
+  ["/contact", "تواصل معنا", "contact"],
 ];
 
 /**
@@ -340,7 +340,7 @@ function renderHeader(active, overlay = false) {
     `
   <header class="site${overlay ? " overlay" : ""}">
     <div class="wrap nav">
-      <a class="logo" href="index.html">
+      <a class="logo" href="/">
         <span class="txt">
           <b>مدينتي رتان</b>
           <em>MADINTY RATAN</em>
@@ -357,7 +357,7 @@ function renderHeader(active, overlay = false) {
       </nav>
 
       <div class="tools">
-        <a class="icon-btn cart-btn" href="cart.html" aria-label="عربة التسوق">
+        <a class="icon-btn cart-btn" href="/cart" aria-label="عربة التسوق">
           ${ICONS.cart}<span class="count">0</span>
         </a>
         <button class="burger" aria-label="القائمة"
@@ -390,11 +390,11 @@ function renderFooter() {
       <div>
         <h4>روابط سريعة</h4>
         <ul>
-          <li><a href="index.html">الرئيسية</a></li>
-          <li><a href="products.html">جميع المنتجات</a></li>
-          <li><a href="about.html">من نحن</a></li>
-          <li><a href="contact.html">تواصل معنا</a></li>
-          <li><a href="cart.html">عربة التسوق</a></li>
+          <li><a href="/">الرئيسية</a></li>
+          <li><a href="/products">جميع المنتجات</a></li>
+          <li><a href="/about">من نحن</a></li>
+          <li><a href="/contact">تواصل معنا</a></li>
+          <li><a href="/cart">عربة التسوق</a></li>
         </ul>
       </div>
       <div>
@@ -426,22 +426,22 @@ function productCard(p) {
   const pickLabel = hasVariants ? "اختر النوع" : p.cushions ? "اختر اللون" : "";
   return `
   <article class="card">
-    <a class="thumb" href="product.html?id=${encodeURIComponent(p.id)}">
+    <a class="thumb" href="/product?id=${encodeURIComponent(p.id)}">
       ${off ? `<span class="badge">خصم ${off}%</span>` : ""}
       <img src="${imgURL(p.img)}" alt="${esc(p.name)}" loading="lazy">
     </a>
     <div class="body">
       <span class="cat-tag">${esc(catName(p.cat))}</span>
-      <h3><a href="product.html?id=${encodeURIComponent(p.id)}">${esc(p.name)}</a></h3>
+      <h3><a href="/product?id=${encodeURIComponent(p.id)}">${esc(p.name)}</a></h3>
       <p class="short">${esc(p.short)}</p>
       <div class="price">${hasVariants ? "يبدأ من " : ""}${money(p.price)}${p.oldPrice ? `<span class="old">${money(p.oldPrice)}</span>` : ""}</div>
       <div class="actions">
         ${
           pickLabel
-            ? `<a class="btn btn-dark" href="product.html?id=${encodeURIComponent(p.id)}">${pickLabel}</a>`
+            ? `<a class="btn btn-dark" href="/product?id=${encodeURIComponent(p.id)}">${pickLabel}</a>`
             : `<button class="btn btn-dark" onclick="addToCart('${esc(p.id)}')">أضف للعربة</button>`
         }
-        <a class="btn btn-line" href="product.html?id=${encodeURIComponent(p.id)}">تفاصيل</a>
+        <a class="btn btn-line" href="/product?id=${encodeURIComponent(p.id)}">تفاصيل</a>
       </div>
     </div>
   </article>`;

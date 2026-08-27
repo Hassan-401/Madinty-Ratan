@@ -7,7 +7,7 @@
 
 <meta name="description" content="أكمل طلبك من Madinty Ratan — الدفع عند الاستلام وتوصيل مجاني داخل القاهرة والجيزة." />
 <meta name="robots" content="noindex, follow" />
-<link rel="canonical" href="https://madinty-ratan.vercel.app/cart.html" />
+<link rel="canonical" href="https://madinty-ratan.vercel.app/cart" />
 
 <link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml" />
 <link rel="alternate icon" href="assets/img/icon-32.png" />
@@ -19,7 +19,7 @@
 <meta property="og:locale" content="ar_EG" />
 <meta property="og:title" content="إتمام الطلب — Madinty Ratan" />
 <meta property="og:description" content="أكمل طلبك من Madinty Ratan — الدفع عند الاستلام وتوصيل مجاني داخل القاهرة والجيزة." />
-<meta property="og:url" content="https://madinty-ratan.vercel.app/cart.html" />
+<meta property="og:url" content="https://madinty-ratan.vercel.app/cart" />
 <meta property="og:image" content="https://madinty-ratan.vercel.app/assets/img/og.jpg" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
@@ -34,13 +34,13 @@
 <body>
 
 <div class="wrap">
-  <div class="crumbs"><a href="index.html">الرئيسية</a> / عربة التسوق</div>
+  <div class="crumbs"><a href="/">الرئيسية</a> / عربة التسوق</div>
 
   <!-- حالة العربة الفارغة -->
   <div class="empty" id="emptyState" style="display:none">
     <div class="ic">🛒</div>
     <p>عربة التسوق فارغة.</p>
-    <a class="btn btn-dark" href="products.html">ابدأ التسوق</a>
+    <a class="btn btn-dark" href="/products">ابدأ التسوق</a>
   </div>
 
   <!-- حالة تأكيد الطلب -->
@@ -51,7 +51,7 @@
     <p>لو لم تُفتح نافذة الواتساب تلقائيًا، اضغط الزر التالي لإرسال الطلب.</p>
     <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:14px">
       <a class="btn btn-wa" id="resendLink" href="#" target="_blank" rel="noopener">💬 إرسال الطلب مرة أخرى</a>
-      <a class="btn btn-line" href="products.html">متابعة التسوق</a>
+      <a class="btn btn-line" href="/products">متابعة التسوق</a>
     </div>
   </div>
 
@@ -173,7 +173,7 @@
       <div class="line">
         <img src="${imgURL(p.img)}" alt="${esc(p.name)}">
         <div class="info">
-          <h4><a href="product.html?id=${encodeURIComponent(p.id)}">${esc(p.name)}</a></h4>
+          <h4><a href="/product?id=${encodeURIComponent(p.id)}">${esc(p.name)}</a></h4>
           ${vn ? `<div class="opt-line">النوع: ${esc(vn)}</div>` : ""}
           ${cn ? `<div class="opt-line">لون الشلت: ${esc(cn)}</div>` : ""}
           <div class="u">${money(unit)} × ${l.qty}</div>

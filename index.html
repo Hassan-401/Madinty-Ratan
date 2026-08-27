@@ -45,7 +45,7 @@
           <p class="sub">
             تصاميم أنيقة بخامات تدوم لسنوات — رتان وحديد علب ودبار
           </p>
-          <a class="btn btn-gold btn-lg" href="products.html"
+          <a class="btn btn-gold btn-lg" href="/products"
             >تسوق الآن <span class="chev">‹</span></a
           >
         </div>
@@ -74,7 +74,7 @@
         </div>
         <div class="grid" id="featured"><div class="loading"><span class="sp"></span>جارٍ التحميل…</div></div>
         <div style="text-align: center; margin-top: 26px">
-          <a class="btn btn-line" href="products.html">عرض جميع المنتجات ←</a>
+          <a class="btn btn-line" href="/products">عرض جميع المنتجات ←</a>
         </div>
       </div>
     </section>
@@ -103,7 +103,7 @@
               <li><b>+2000</b><span>عميل</span></li>
               <li><b>10</b><span>سنوات ضمان</span></li>
             </ul>
-            <a class="btn btn-line" href="about.html">اعرف أكتر عننا ←</a>
+            <a class="btn btn-line" href="/about">اعرف أكتر عننا ←</a>
           </div>
         </div>
       </div>
@@ -131,7 +131,7 @@
       storeReady(() => {
       document.getElementById("catsGrid").innerHTML = CATEGORIES.map(
         (c) => `
-    <a class="cat" href="products.html?cat=${c.id}">
+    <a class="cat" href="/products?cat=${c.id}">
       <div class="cat-img">
         <span class="ic">${c.icon}</span>
         ${c.img ? `<img src="${imgURL(c.img)}" alt="${esc(c.name)}" loading="lazy"
