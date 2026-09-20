@@ -219,11 +219,12 @@ function wireImgField(id) {
     const f = file.files[0];
     file.value = "";
     if (!f) return;
-    if (f.size > 5 * 1024 * 1024) {
-      status.textContent = "الصورة أكبر من 5 ميجا — صغّرها الأول.";
+    /* الصورة بتتضغط في المتصفح قبل الرفع، فالحد ده على الأصل بس */
+    if (f.size > 25 * 1024 * 1024) {
+      status.textContent = "الصورة أكبر من 25 ميجا — صغّرها الأول.";
       return;
     }
-    status.textContent = "بيرفع…";
+    status.textContent = "بيجهّز الصورة…";
     try {
       input.value = await SB.upload(f, id === "cImg" ? "categories" : "products");
       status.textContent = "تم الرفع ✓";

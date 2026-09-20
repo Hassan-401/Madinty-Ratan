@@ -181,6 +181,51 @@ const SB = (() => {
 
   const enc = encodeURIComponent;
 
+  /* ============================================================
+     تجهيز الصورة قبل الرفع
+     ------------------------------------------------------------
+     صور الموبايل والكاميرا بتيجي PNG أو JPEG بحجم ضخم — صورة
+     منتج واحدة ممكن تبقى 3 ميجا، وده بيبطّأ الموقع جدًا على نت
+     الموبايل. فبنحوّلها WebP هنا في المتصفح قبل ما نرفعها.
+
+     التحويل بيحصل على جهازك مش على السيرفر، والأبعاد بتفضل زي ما
+     هي (إلا لو كبيرة جدًا) عشان الأسعار المكتوبة على الصور تفضل
+     واضحة. ولو الأصل طلع أصغر من الناتج، بنرفع الأصل.
+     ============================================================ */
+  const WEBP_QUALITY = 0.85;
+  const WEBP_MAX_SIDE = 2000;
+
+  async function toWebP(file) {
+    /* GIF المتحركة بتفقد الحركة، وSVG مالهاش لازمة أصلًا */
+    if (!file || /image\/(gif|svg)/i.test(file.type)) return file;
+    if (!(window.createImageBitmap && document.createElement("canvas").toBlob)) return file;
+
+    try {
+      const bmp = await createImageBitmap(file);
+      const scale = Math.min(1, WEBP_MAX_SIDE / Math.max(bmp.width, bmp.height));
+      const w = Math.round(bmp.width * scale);
+      const h = Math.round(bmp.height * scale);
+
+      const canvas = document.createElement("canvas");
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext("2d");
+      ctx.imageSmoothingQuality = "high";
+      ctx.drawImage(bmp, 0, 0, w, h);
+      if (bmp.close) bmp.close();
+
+      const blob = await new Promise((r) => canvas.toBlob(r, "image/webp", WEBP_QUALITY));
+      /* متصفح مش بيدعم webp، أو الأصل أصغر خلاص */
+      if (!blob || blob.type !== "image/webp" || blob.size >= file.size * 0.95) return file;
+
+      const name = String(file.name || "image").replace(/\.[^.]+$/, "") + ".webp";
+      return new File([blob], name, { type: "image/webp" });
+    } catch (e) {
+      /* أي مشكلة في التحويل — نرفع الأصل عادي */
+      return file;
+    }
+  }
+
   /* بعض الملفات (زي .jfif) المتصفح بيسيب نوعها فاضي */
   const TYPES = {
     jpg: "image/jpeg", jpeg: "image/jpeg", jfif: "image/jpeg", jpe: "image/jpeg",
@@ -395,11 +440,12 @@ const SB = (() => {
     /* ---------- رفع صورة ---------- */
     /** @returns {Promise<string>} رابط الصورة */
     async upload(file, folder = "products") {
-      const d = await call("/upload?folder=" + enc(folder) + "&name=" + enc(file.name || ""), {
+      const img = await toWebP(file);
+      const d = await call("/upload?folder=" + enc(folder) + "&name=" + enc(img.name || ""), {
         method: "POST",
         authed: true,
-        raw: file,
-        type: file.type || guessType(file.name),
+        raw: img,
+        type: img.type || guessType(img.name),
       });
       return d.url;
     },

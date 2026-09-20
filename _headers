@@ -11,11 +11,14 @@
 /assets/img/*
   Cache-Control: public, max-age=2592000, stale-while-revalidate=86400
 
+# JS و CSS: المتصفح بيسأل السيرفر كل مرة "اتغيّر؟" وبياخد رد صغير
+# جدًا لو الملف زي ما هو. كده أي تعديل بنرفعه يوصل للناس على طول
+# بدل ما يفضلوا على نسخة قديمة لحد ما الكاش يخلص.
 /assets/css/*
-  Cache-Control: public, max-age=86400
+  Cache-Control: no-cache
 
 /assets/js/*
-  Cache-Control: public, max-age=86400
+  Cache-Control: no-cache
 
 /admin
   X-Robots-Tag: noindex, nofollow
