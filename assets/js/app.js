@@ -15,7 +15,7 @@ const money = (n) => Number(n).toLocaleString("en-US") + " ج.م";
 
    ⚠️ كل ما تبدّل أي صورة في assets/img بنفس اسمها، زوّد الرقم ده
    واحد وارفع. الصور المرفوعة من لوحة التحكم مش محتاجة كده لأن
-   Supabase بيدّي كل صورة اسم جديد.
+   كل صورة بتترفع باسم جديد.
    ============================================================ */
 const ASSET_V = "2";
 
@@ -28,7 +28,7 @@ function imgURL(s) {
   } catch (e) {
     u = encodeURI(raw);
   }
-  /* الإصدار على صور المشروع بس — روابط Supabase أسماءها فريدة أصلًا */
+  /* الإصدار على صور المشروع بس — الصور المرفوعة أسماءها فريدة أصلًا */
   if (/^\/?assets\/img\//.test(u)) u += (u.includes("?") ? "&" : "?") + "v=" + ASSET_V;
   return u;
 }
@@ -44,8 +44,8 @@ const esc = (s) =>
 /* ============================================================
    الكتالوج
    ------------------------------------------------------------
-   المصدر الأساسي = جداول Supabase (لو config.js متظبط)، فأي تعديل
-   من لوحة التحكم بيظهر لكل الزوّار على طول.
+   المصدر الأساسي = قاعدة البيانات على Cloudflare، فأي تعديل من
+   لوحة التحكم بيظهر لكل الزوّار على طول.
 
    لو الاتصال فشل بنرجع لآخر نسخة متخزنة في المتصفح، وبعدين لنسخة
    data.js المرفوعة مع الموقع — عشان الصفحة ما تفضلش فاضية أبدًا.
@@ -54,7 +54,7 @@ const CATALOG_CACHE = "mr_catalog_v1";
 
 let CATEGORIES = DEFAULT_CATEGORIES;
 let PRODUCTS = DEFAULT_PRODUCTS;
-/** من فين اتحمّل الكتالوج: supabase | cache | data.js */
+/** من فين اتحمّل الكتالوج: server | cache | data.js */
 let CATALOG_SOURCE = "data.js";
 
 function readCatalogCache() {
@@ -73,7 +73,6 @@ function readCatalogCache() {
 const CATALOG_TIMEOUT = 6000;
 
 async function loadCatalog() {
-  if (!SB.configured) return;
   try {
     const [cats, prods] = await Promise.all([
       SB.categories(CATALOG_TIMEOUT),
@@ -83,7 +82,7 @@ async function loadCatalog() {
     if (cats.length) CATEGORIES = cats;
     if (prods.length) PRODUCTS = prods;
     if (cats.length && prods.length) {
-      CATALOG_SOURCE = "supabase";
+      CATALOG_SOURCE = "server";
       localStorage.setItem(
         CATALOG_CACHE,
         JSON.stringify({ categories: CATEGORIES, products: PRODUCTS }),
@@ -96,7 +95,7 @@ async function loadCatalog() {
       PRODUCTS = c.products;
       CATALOG_SOURCE = "cache";
     }
-    console.warn("[Madinty Ratan] تعذّر تحميل الكتالوج من Supabase:", err.message);
+    console.warn("[Madinty Ratan] تعذّر تحميل الكتالوج من السيرفر:", err.message);
   }
   updateCartCount();
 }
@@ -203,8 +202,8 @@ function shippingLabel(gov) {
 /* ============================================================
    الطلبات
    ------------------------------------------------------------
-   الطلب بيتبعت لـ Supabase عشان يظهر في لوحة التحكم، وبيتحفظ كمان
-   نسخة محلية في متصفح العميل كنسخة احتياطية لو النت فصل.
+   الطلب بيتبعت لقاعدة البيانات عشان يظهر في لوحة التحكم، وبيتحفظ
+   كمان نسخة محلية في متصفح العميل كنسخة احتياطية لو النت فصل.
    ============================================================ */
 const ORDERS_KEY = "mr_orders_v1";
 const ORDER_STATUSES = [
@@ -240,7 +239,6 @@ function addOrder(order) {
  * @returns {Promise<boolean>}
  */
 async function sendOrder(order, source = "web") {
-  if (!SB.configured) return false;
   try {
     await SB.addOrder(order, source);
     return true;

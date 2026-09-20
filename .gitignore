@@ -12,3 +12,6 @@ desktop.ini
 node_modules/
 dist/
 *.log
+
+# Cloudflare
+.wrangler/

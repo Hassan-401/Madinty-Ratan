@@ -1,20 +1,15 @@
 /* ============================================================
-   Madinty Ratan — ربط Supabase
+   Madinty Ratan — إعدادات الاتصال
    ------------------------------------------------------------
-   هات القيمتين دول من:
-   Supabase Dashboard ← Project Settings ← API
+   الـAPI شغّال على نفس الدومين بتاع الموقع (/api)، فالقيمة دي
+   بتفضل فاضية ومحدش محتاج يغيّرها.
 
-   • SUPABASE_URL       = Project URL       (شكله: https://xxxxx.supabase.co)
-   • SUPABASE_ANON_KEY  = anon public key   (أو publishable key في المشاريع الجديدة)
+   استثناء واحد بس: لو بتشتغل على نسخة محلية من الصفحات وعايزها
+   تكلّم السيرفر المنشور، حط لينك الـWorker هنا مؤقتًا. مثال:
+     const API_BASE = "https://madinty-ratan.hm2022004.workers.dev";
 
-   المفتاح ده عام ومكشوف للكل — ده طبيعي وآمن، لأن الحماية الحقيقية
-   في قواعد RLS في supabase/schema.sql مش في إخفاء المفتاح.
-   ⛔ متحطش هنا الـ service_role key نهائيًا.
-
-   لو الخانتين فاضيتين، الموقع بيشتغل عادي من assets/js/data.js
-   (بس لوحة التحكم مش هتشتغل).
+   مفيش أي مفتاح سري في الكود ده ولا في أي ملف بيتنشر — كل
+   الأسرار متخزنة في إعدادات الـWorker على Cloudflare.
    ============================================================ */
 
-const SUPABASE_URL = "https://rmsospceilwkdsknkapw.supabase.co";
-const SUPABASE_ANON_KEY =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJtc29zcGNlaWx3a2Rza25rYXB3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc3NTc5OTcsImV4cCI6MjEwMzMzMzk5N30.TOKB07fXjLHrFeNLxSn2WXYW6ZPHUStI086Mbe3aqwA";
+const API_BASE = "";

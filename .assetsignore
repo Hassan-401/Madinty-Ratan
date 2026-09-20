@@ -1,0 +1,17 @@
+# الملفات دي بتفضل في المشروع بس متترفعش على الاستضافة
+.git
+.github
+.claude
+.gitignore
+.assetsignore
+.wrangler
+node_modules
+package.json
+package-lock.json
+wrangler.jsonc
+worker
+d1
+migrate
+supabase
+vercel.json
+*.md

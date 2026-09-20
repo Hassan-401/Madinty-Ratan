@@ -1,12 +1,12 @@
 /* ============================================================
    Madinty Ratan — لوحة التحكم
    ------------------------------------------------------------
-   كل البيانات في Supabase:
+   كل البيانات في قاعدة بيانات Cloudflare D1:
    • categories / products  -> الكتالوج اللي الموقع بيعرضه
    • orders                 -> الطلبات الجاية من الموقع
    أي تعديل هنا بيظهر للزوّار على طول من غير رفع ولا إعادة نشر.
 
-   الإعداد في: assets/js/config.js + supabase/schema.sql
+   الاتصال بيحصل من assets/js/sb.js على /api — شوف SETUP.md
    ============================================================ */
 
 /* الطلبات المحمّلة حاليًا (الكتالوج في CATEGORIES / PRODUCTS من app.js) */
@@ -15,25 +15,15 @@ let ORDERS = [];
 /* ============================================================
    1) الدخول
    ------------------------------------------------------------
-   حساب Supabase عادي. الصلاحية مش بمجرد إنك داخل — لازم إيميلك
-   يكون في جدول admins، وده اللي بيسمح بالكتابة في RLS.
+   الصلاحية مش بمجرد إنك داخل — لازم إيميلك يكون في جدول admins،
+   وده اللي الـWorker بيتأكد منه قبل أي كتابة.
    ============================================================ */
-function showSetup(msg) {
-  $("#loginForm").innerHTML = `
-    <div class="mark">⚙️</div>
-    <h1>محتاج إعداد</h1>
-    <p style="margin-bottom:16px">${msg}</p>
-    <p class="muted" style="font-size:12.5px;margin:0">
-      الخطوات كاملة في ملف <b class="mono">SETUP.md</b> في المشروع.
-    </p>`;
-}
-
 async function openApp() {
   try {
     if (!(await SB.isAdmin())) {
       await SB.signOut();
       throw new Error(
-        "الحساب ده مش مسجّل كأدمن — ضيف إيميلك في جدول admins في Supabase",
+        "الحساب ده مش مسجّل كأدمن — ضيف إيميلك في جدول admins (شوف SETUP.md)",
       );
     }
   } catch (err) {
@@ -53,22 +43,50 @@ async function openApp() {
 $("#loginForm").addEventListener("submit", async (e) => {
   e.preventDefault();
   const btn = $("#loginBtn");
+  const email = $("#email").value.trim();
+  const pass = $("#pass").value;
   btn.disabled = true;
   btn.textContent = "لحظة…";
   try {
-    await SB.signIn($("#email").value.trim(), $("#pass").value);
+    await SB.signIn(email, pass);
     await openApp();
   } catch (err) {
-    toast(
-      /Invalid login/i.test(err.message) ? "الإيميل أو كلمة السر غلط" : err.message,
-    );
-    $("#pass").value = "";
-    $("#pass").focus();
+    /* الحساب موجود بس لسه ماحطّش كلمة سر */
+    if (err.setup) await firstRun(email, pass);
+    else {
+      toast(err.message);
+      $("#pass").value = "";
+      $("#pass").focus();
+    }
   } finally {
     btn.disabled = false;
     btn.textContent = "دخول";
   }
 });
+
+/** أول دخول للحساب: كلمة السر اللي اتكتبت بتتثبّت كـكلمة سر اللوحة */
+async function firstRun(email, pass) {
+  if (pass.length < 8) {
+    toast("أول دخول — اختار كلمة سر 8 حروف على الأقل");
+    $("#pass").value = "";
+    $("#pass").focus();
+    return;
+  }
+  const ok = confirm(
+    "أول دخول بالحساب ده.\n\nكلمة السر اللي كتبتها هتبقى كلمة سر اللوحة من دلوقتي.\nتأكيد؟",
+  );
+  if (!ok) {
+    $("#pass").value = "";
+    return;
+  }
+  try {
+    await SB.setupPassword(email, pass);
+    await openApp();
+  } catch (err) {
+    toast("فشل التفعيل: " + err.message);
+    $("#pass").value = "";
+  }
+}
 
 $("#logout").addEventListener("click", async () => {
   await SB.signOut();
@@ -888,7 +906,7 @@ function renderCats() {
           ).join("")}
         </tbody>
       </table>`
-    : `<p class="empty-row">مفيش أقسام — ابدأ بـ «استيراد الكتالوج الافتراضي» من الإعدادات.</p>`;
+    : `<p class="empty-row">مفيش أقسام — ابدأ بإضافة قسم جديد.</p>`;
 }
 
 $("#addCat").addEventListener("click", () => catModal(null));
@@ -978,22 +996,6 @@ function catModal(c) {
 /* ============================================================
    8) الإعدادات
    ============================================================ */
-$("#seedCatalog").addEventListener("click", async (e) => {
-  if (
-    !confirm(
-      `هيتنقل ${DEFAULT_CATEGORIES.length} قسم و${DEFAULT_PRODUCTS.length} منتج من data.js لقاعدة البيانات.\n` +
-        `المنتج اللي كوده موجود هيتحدّث ببيانات data.js. تأكيد؟`,
-    )
-  )
-    return;
-  e.target.disabled = true;
-  await run(
-    () => SB.importCatalog(DEFAULT_CATEGORIES, DEFAULT_PRODUCTS),
-    "تم الاستيراد — افتح الموقع وشوف",
-  );
-  e.target.disabled = false;
-});
-
 $("#dlBackup").addEventListener("click", () => {
   download(
     "madinty-backup-" + new Date().toISOString().slice(0, 10) + ".json",
@@ -1083,8 +1085,6 @@ async function refresh() {
 function renderAll() {
   fillCatSelects();
   refreshImgList();
-  $("#seedCount").textContent =
-    `${DEFAULT_CATEGORIES.length} أقسام و${DEFAULT_PRODUCTS.length} منتج`;
   renderHome();
   renderOrders();
   renderProducts();
@@ -1092,11 +1092,6 @@ function renderAll() {
 }
 
 (async function boot() {
-  if (!SB.configured)
-    return showSetup(
-      `حط <b class="mono">SUPABASE_URL</b> و <b class="mono">SUPABASE_ANON_KEY</b>
-       في ملف <b class="mono">assets/js/config.js</b> وارفع المشروع تاني.`,
-    );
   if (await SB.signedIn()) await openApp();
   else $("#email").focus();
 })();

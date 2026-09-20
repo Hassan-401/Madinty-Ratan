@@ -1,0 +1,74 @@
+{
+  // ============================================================
+  // Madinty Ratan — إعدادات Cloudflare
+  // ------------------------------------------------------------
+  // Worker واحد بيخدم الموقع كله:
+  //   • الصفحات الثابتة (assets) — مجانية ومش بتعدّي على الـWorker
+  //   • /api/*  و /media/*      — بيشتغلوا في worker/index.js
+  //
+  // النشر:  npx wrangler deploy
+  // ============================================================
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "madinty-ratan",
+  "main": "worker/index.js",
+  "compatibility_date": "2026-09-01",
+  "observability": { "enabled": true },
+
+  // لينك التجربة madinty-ratan.<الحساب>.workers.dev — سيبه شغّال لحد
+  // ما الدومين يشتغل، وبعدين خلّيه false عشان مايبقاش فيه نسختين
+  // من الموقع على النت.
+  "workers_dev": true,
+
+  // الدومين. Cloudflare بيعمل شهادة SSL وسجلات الـDNS لوحده.
+  "routes": [
+    { "pattern": "madinty-ratan.store", "custom_domain": true },
+    { "pattern": "www.madinty-ratan.store", "custom_domain": true }
+  ],
+
+  // الموقع كله في جذر المشروع. اللي مش المفروض ينشر موجود في .assetsignore
+  "assets": {
+    "directory": ".",
+    "binding": "ASSETS",
+    // /products يعرض products.html، و /products.html يحوّل لـ /products
+    "html_handling": "auto-trailing-slash",
+    // أي مسار مش موجود بيروح للـWorker، وهو اللي بيرجّع صفحة 404
+    "not_found_handling": "none",
+    "run_worker_first": ["/api/*", "/media/*"]
+  },
+
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "madinty-ratan",
+      "database_id": "b89c929f-cafc-48be-b3c5-55706f3dd0fc"
+    }
+  ],
+
+  "r2_buckets": [
+    {
+      "binding": "MEDIA",
+      "bucket_name": "madinty-ratan-media"
+    }
+  ],
+
+  // حد أقصى للمحاولات لكل IP — يحمي الدخول من التخمين والطلبات من السبام
+  "unsafe": {
+    "bindings": [
+      {
+        "name": "LOGIN_LIMIT",
+        "type": "ratelimit",
+        "namespace_id": "1001",
+        "simple": { "limit": 10, "period": 60 }
+      },
+      {
+        "name": "ORDER_LIMIT",
+        "type": "ratelimit",
+        "namespace_id": "1002",
+        "simple": { "limit": 15, "period": 60 }
+      }
+    ]
+  }
+
+  // SESSION_SECRET بيتحط كـsecret مش هنا:
+  //   npx wrangler secret put SESSION_SECRET
+}
