@@ -14,6 +14,19 @@
   "compatibility_date": "2026-09-01",
   "observability": { "enabled": true },
 
+  // لينك التجربة madinty-ratan.<الحساب>.workers.dev — سيبه شغّال لحد
+  // ما الدومين يشتغل، وبعدين خلّيه false عشان مايبقاش فيه نسختين
+  // من الموقع على النت.
+  "workers_dev": true,
+
+  // الدومين — شيل التعليق لما يكون مضاف في نفس حساب Cloudflare
+  // (يعني الـnameservers متغيّرة عليه). Cloudflare بيعمل شهادة SSL
+  // وسجلات الـDNS لوحده.
+  // "routes": [
+  //   { "pattern": "madinty-ratan.store", "custom_domain": true },
+  //   { "pattern": "www.madinty-ratan.store", "custom_domain": true }
+  // ],
+
   // الموقع كله في جذر المشروع. اللي مش المفروض ينشر موجود في .assetsignore
   "assets": {
     "directory": ".",

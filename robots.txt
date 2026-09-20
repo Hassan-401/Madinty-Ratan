@@ -4,4 +4,4 @@ Allow: /
 Disallow: /admin
 Disallow: /cart
 
-Sitemap: https://madinty-ratan.vercel.app/sitemap.xml
+Sitemap: https://madinty-ratan.store/sitemap.xml
