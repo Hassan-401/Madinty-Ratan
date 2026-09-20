@@ -14,10 +14,9 @@
   "compatibility_date": "2026-09-01",
   "observability": { "enabled": true },
 
-  // لينك التجربة madinty-ratan.<الحساب>.workers.dev — سيبه شغّال لحد
-  // ما الدومين يشتغل، وبعدين خلّيه false عشان مايبقاش فيه نسختين
-  // من الموقع على النت.
-  "workers_dev": true,
+  // الموقع على الدومين بتاعه، فلينك workers.dev مقفول عشان مايبقاش
+  // فيه نسخة تانية من المتجر مفهرسة. خلّيه true لو احتجته للتجربة.
+  "workers_dev": false,
 
   // الدومين. Cloudflare بيعمل شهادة SSL وسجلات الـDNS لوحده.
   "routes": [
