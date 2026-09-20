@@ -26,6 +26,7 @@ create table if not exists admins (
 );
 
 insert or ignore into admins (email) values ('hm2022004@gmail.com');
+insert or ignore into admins (email) values ('gamal236emad@gmail.com');
 
 -- ============================================================
 -- 2) الجداول

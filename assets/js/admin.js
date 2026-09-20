@@ -906,7 +906,7 @@ function renderCats() {
           ).join("")}
         </tbody>
       </table>`
-    : `<p class="empty-row">مفيش أقسام — ابدأ بـ «استيراد الكتالوج الافتراضي» من الإعدادات.</p>`;
+    : `<p class="empty-row">مفيش أقسام — ابدأ بإضافة قسم جديد.</p>`;
 }
 
 $("#addCat").addEventListener("click", () => catModal(null));
@@ -996,22 +996,6 @@ function catModal(c) {
 /* ============================================================
    8) الإعدادات
    ============================================================ */
-$("#seedCatalog").addEventListener("click", async (e) => {
-  if (
-    !confirm(
-      `هيتنقل ${DEFAULT_CATEGORIES.length} قسم و${DEFAULT_PRODUCTS.length} منتج من data.js لقاعدة البيانات.\n` +
-        `المنتج اللي كوده موجود هيتحدّث ببيانات data.js. تأكيد؟`,
-    )
-  )
-    return;
-  e.target.disabled = true;
-  await run(
-    () => SB.importCatalog(DEFAULT_CATEGORIES, DEFAULT_PRODUCTS),
-    "تم الاستيراد — افتح الموقع وشوف",
-  );
-  e.target.disabled = false;
-});
-
 $("#dlBackup").addEventListener("click", () => {
   download(
     "madinty-backup-" + new Date().toISOString().slice(0, 10) + ".json",
@@ -1101,8 +1085,6 @@ async function refresh() {
 function renderAll() {
   fillCatSelects();
   refreshImgList();
-  $("#seedCount").textContent =
-    `${DEFAULT_CATEGORIES.length} أقسام و${DEFAULT_PRODUCTS.length} منتج`;
   renderHome();
   renderOrders();
   renderProducts();
